@@ -13,7 +13,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from functools import lru_cache
 
-from src.shared.logger import logger
+from src.core.logger import logger
 
 
 class EmailSender(ABC):
@@ -135,7 +135,7 @@ def get_email_sender() -> EmailSender:
     Returns:
         EmailSender: 邮件发送实例
     """
-    from src.infrastructure.config.settings import get_settings
+    from src.core.config import get_settings
 
     settings = get_settings()
     if settings.smtp_host:

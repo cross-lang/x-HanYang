@@ -10,7 +10,7 @@ from functools import lru_cache
 
 import redis.asyncio as aioredis
 
-from src.shared.logger import logger
+from src.core.logger import logger
 
 
 class CacheProvider(ABC):
@@ -122,7 +122,7 @@ def get_cache_provider() -> CacheProvider:
     Raises:
         ValueError: Redis URL 未配置时抛出
     """
-    from src.infrastructure.config.settings import get_settings
+    from src.core.config import get_settings
 
     settings = get_settings()
     if not settings.redis_url:

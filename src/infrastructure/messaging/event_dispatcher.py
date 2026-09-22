@@ -10,7 +10,7 @@ from collections.abc import Awaitable, Callable
 
 from src.application.shared.event_bus import EventBus, EventHandler
 from src.domain.shared.domain_event import DomainEvent
-from src.shared.logger import logger
+from src.core.logger import logger
 
 import inspect
 

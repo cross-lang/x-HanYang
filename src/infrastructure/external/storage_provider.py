@@ -8,7 +8,7 @@ from __future__ import annotations
 import os
 
 from src.domain.file.storage_provider import StorageProvider
-from src.shared.logger import logger
+from src.core.logger import logger
 
 
 class LocalStorageProvider(StorageProvider):

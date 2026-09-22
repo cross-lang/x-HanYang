@@ -55,7 +55,7 @@ def get_database_provider() -> DatabaseProvider:
     Returns:
         DatabaseProvider: 数据库提供者实例
     """
-    from src.infrastructure.config.settings import get_settings
+    from src.core.config import get_settings
 
     settings = get_settings()
     return DatabaseProvider(url=settings.database_url)

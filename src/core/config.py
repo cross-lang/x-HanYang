@@ -17,7 +17,7 @@ _WEAK_SECRET_KEYS: frozenset[str] = frozenset({
     "secret", "default", "password", "123456",
 })
 
-from src.shared.logger import logger
+from src.core.logger import logger
 
 
 class AppSettings(BaseSettings):
@@ -96,6 +96,13 @@ class AppSettings(BaseSettings):
     # ── HTTP 客户端 ──────────────────────────────
     http_timeout: int = 30
     http_max_retries: int = 3
+
+    # ── 日志 ─────────────────────────────────────
+    logging_level: str = "INFO"
+    logging_format: str = "console"  # "json" 或 "console"
+    logging_file_path: str = "logs/app.log"
+    logging_rotation: str = "1 hour"
+    logging_retention: str = "7 days"
 
     @property
     def is_production(self) -> bool:

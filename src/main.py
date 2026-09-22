@@ -36,15 +36,15 @@ from src.constants.app import APP_NAME, APP_VERSION, APP_DESCRIPTION
 from src.constants.http import DOCS_URL, REDOC_URL
 from src.constants.messages import MSG_INTERNAL_SERVER_ERROR
 from src.api.http.router import api_router
-from src.api.http.middleware import (
+from src.core.middleware import (
     ExceptionHandlingMiddleware,
     RequestIDMiddleware,
     RequestLoggingMiddleware,
 )
-from src.api.http.exception_handlers import register_exception_handlers
-from src.infrastructure.config.settings import get_settings
+from src.core.exception_handlers import register_exception_handlers
+from src.core.config import get_settings
 from src.infrastructure.external.rate_limiter import get_limiter
-from src.shared.logger import logger
+from src.core.logger import logger
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -56,6 +56,11 @@ async def lifespan(app: FastAPI):
         app: FastAPI 应用实例
     """
     settings = get_settings()
+
+    # 初始化日志配置（JSON/彩色格式、文件输出、日志级别等）
+    from src.core.logger import setup_logging
+    setup_logging()
+
     has_db = bool(settings.database_url)
     has_redis = bool(settings.redis_url)
 

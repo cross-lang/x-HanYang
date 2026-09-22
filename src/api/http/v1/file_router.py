@@ -13,7 +13,7 @@ from src.api.http.schemas.file import FileUploadResponse
 from src.api.shared.response import success_response
 from src.domain.file.storage_provider import StorageProvider
 from src.infrastructure.external.storage_provider import LocalStorageProvider
-from src.infrastructure.config.settings import get_settings
+from src.core.config import get_settings
 
 router = APIRouter(prefix="/files", tags=["文件管理"])
 

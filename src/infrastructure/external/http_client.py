@@ -13,7 +13,7 @@ from typing import Any
 
 import httpx
 
-from src.shared.logger import logger
+from src.core.logger import logger
 
 
 class HttpProvider(ABC):
@@ -145,7 +145,7 @@ def get_http_provider() -> HttpProvider:
     Returns:
         HttpProvider: HTTP 客户端实例
     """
-    from src.infrastructure.config.settings import get_settings
+    from src.core.config import get_settings
 
     settings = get_settings()
     return HttpxProvider(timeout=settings.http_timeout, max_retries=settings.http_max_retries)

@@ -32,8 +32,9 @@ from src.domain.audit.login_log import LoginLog
 from src.domain.auth.auth_service import AuthDomainService, CurrentUser, TokenPair
 from src.domain.shared.domain_exception import AuthenticationException
 from src.domain.user.repository import UserRepository
-from src.shared.security import create_access_token, create_refresh_token, decode_token
-from src.shared.logger import logger
+from src.core.tokens import create_access_token, create_refresh_token, decode_token
+from src.core.logger import logger
+from src.core.session import set_login_status, is_token_valid, clear_login_status
 from src.application.shared.unit_of_work import UnitOfWork
 
 
@@ -129,6 +130,13 @@ class InfraAuthDomainService(AuthDomainService):
             algorithm=self._algorithm,
         )
 
+        # 写入有状态会话（Redis 不可用时自动降级跳过）
+        await set_login_status(
+            user.id,
+            access_token,
+            self._access_token_expire_minutes * 60,
+        )
+
         return TokenPair(
             access_token=access_token,
             refresh_token=refresh_token,
@@ -139,6 +147,9 @@ class InfraAuthDomainService(AuthDomainService):
     async def refresh_tokens(self, refresh_token: str) -> TokenPair:
         """刷新令牌。
 
+        刷新前校验用户是否仍有活跃会话（Redis 登录态），
+        若用户已登出则拒绝刷新。刷新后更新会话中的 access_token。
+
         Args:
             refresh_token: 刷新令牌
 
@@ -146,7 +157,7 @@ class InfraAuthDomainService(AuthDomainService):
             TokenPair: 新的令牌对
 
         Raises:
-            AuthenticationException: 刷新令牌无效或过期
+            AuthenticationException: 刷新令牌无效、过期或会话已失效
         """
         try:
             payload = decode_token(refresh_token, self._secret_key, self._algorithm)
@@ -163,6 +174,16 @@ class InfraAuthDomainService(AuthDomainService):
         if user is None or user.is_deleted or user.is_locked:
             raise AuthenticationException(MSG_USER_NOT_FOUND)
 
+        # 校验会话是否仍然有效（用户是否已登出）
+        from src.core.config import get_settings
+        settings = get_settings()
+        if settings.redis_url:
+            from src.core.session import get_login_status
+            stored_token = await get_login_status(user_id)
+            if stored_token is None:
+                # Redis 可用但无记录 = 用户已登出
+                raise AuthenticationException(MSG_INVALID_REFRESH_TOKEN)
+
         subject = str(user.id)
         extra = {"username": user.username}
         new_access = create_access_token(
@@ -176,6 +197,13 @@ class InfraAuthDomainService(AuthDomainService):
             subject=subject,
             secret_key=self._secret_key,
             algorithm=self._algorithm,
+        )
+
+        # 更新会话中的 access_token
+        await set_login_status(
+            user_id,
+            new_access,
+            self._access_token_expire_minutes * 60,
         )
 
         return TokenPair(
@@ -208,6 +236,11 @@ class InfraAuthDomainService(AuthDomainService):
             raise AuthenticationException(MSG_INVALID_ACCESS_TOKEN)
 
         user_id = int(payload["sub"])
+
+        # 校验访问令牌是否与会话中的令牌一致（支持即时登出和单设备登录）
+        if not await is_token_valid(user_id, token):
+            raise AuthenticationException(MSG_INVALID_TOKEN)
+
         user = await self._uow.user_repo.find_by_id(user_id)
         if user is None or user.is_deleted:
             raise AuthenticationException(MSG_USER_NOT_FOUND)
@@ -233,13 +266,13 @@ class InfraAuthDomainService(AuthDomainService):
     async def logout(self, user_id: int, token: str) -> None:
         """退出登录。
 
-        当前为无状态 JWT，退出仅作标记。
-        后续接入 Redis 后可实现令牌黑名单。
+        清除 Redis 中的登录态，使该用户所有已签发的 access_token 立即失效。
 
         Args:
             user_id: 用户 ID
-            token: 访问令牌（用于后续黑名单）
+            token: 访问令牌（保留参数以兼容接口，实际由 session 模块清除）
         """
+        await clear_login_status(user_id)
 
     @staticmethod
     async def _record_login_log(

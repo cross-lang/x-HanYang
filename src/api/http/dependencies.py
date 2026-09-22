@@ -34,11 +34,11 @@ from src.domain.audit.repository import LoginLogRepository
 from src.domain.auth.auth_service import AuthDomainService
 from src.domain.user.repository import RoleRepository, UserRepository
 from src.infrastructure.auth.auth_domain_service import InfraAuthDomainService
-from src.infrastructure.config.settings import get_settings
+from src.core.config import get_settings
 from src.infrastructure.persistence.database import get_session
 from src.infrastructure.persistence.unit_of_work import SqlUnitOfWork
 from src.infrastructure.messaging.event_dispatcher import InMemoryEventBus
-from src.shared.logger import logger
+from src.core.logger import logger
 
 _bearer_scheme = HTTPBearer(auto_error=False)
 
