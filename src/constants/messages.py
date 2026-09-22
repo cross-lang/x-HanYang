@@ -18,3 +18,6 @@ MSG_INVALID_OR_EXPIRED_TOKEN: str = "无效或过期的令牌"
 MSG_INTERNAL_SERVER_ERROR: str = "服务器内部错误"
 MSG_LOGOUT_SUCCESS: str = "退出成功"
 MSG_USER_DELETED: str = "用户删除成功"
+
+# ── 角色 ─────────────────────────────────────
+MSG_ROLE_DELETED: str = "角色删除成功"

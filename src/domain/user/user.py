@@ -143,13 +143,19 @@ class User(AggregateRoot):
         self.status = UserStatus.ACTIVE
 
     def soft_delete(self) -> None:
-        """软删除用户。"""
+        """软删除用户（添加 UserDeleted 领域事件）。"""
         from datetime import datetime, timezone
+        from src.domain.user.events import UserDeleted
 
         self.deleted_at = datetime.now(timezone.utc)
+        self._add_event(UserDeleted(user_id=self.id, username=self.username))
 
     def record_login(self, ip_address: str | None) -> None:
-        """记录登录信息。"""
+        """记录登录信息。
+
+        Args:
+            ip_address: 客户端 IP 地址
+        """
         from datetime import datetime, timezone
 
         self.last_login_at = datetime.now(timezone.utc)
@@ -157,10 +163,18 @@ class User(AggregateRoot):
 
     @property
     def is_deleted(self) -> bool:
-        """是否已软删除。"""
+        """判断用户是否已软删除。
+
+        Returns:
+            bool: 是否已删除
+        """
         return self.deleted_at is not None
 
     @property
     def is_locked(self) -> bool:
-        """是否已锁定。"""
+        """判断用户是否已锁定。
+
+        Returns:
+            bool: 是否已锁定
+        """
         return self.status == UserStatus.LOCKED

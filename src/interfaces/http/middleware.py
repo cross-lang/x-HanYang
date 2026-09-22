@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import time
 import uuid
+from collections.abc import Awaitable, Callable
 
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
@@ -19,7 +20,7 @@ _REQUEST_ID_LENGTH: int = 16
 class RequestIDMiddleware(BaseHTTPMiddleware):
     """请求 ID 中间件 — 为每个请求分配唯一标识。"""
 
-    async def dispatch(self, request: Request, call_next) -> Response:
+    async def dispatch(self, request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
         """为请求分配唯一标识。
 
         Args:
@@ -39,7 +40,7 @@ class RequestIDMiddleware(BaseHTTPMiddleware):
 class RequestLoggingMiddleware(BaseHTTPMiddleware):
     """请求日志中间件 — 记录请求耗时。"""
 
-    async def dispatch(self, request: Request, call_next) -> Response:
+    async def dispatch(self, request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
         """记录请求耗时。
 
         Args:
@@ -63,7 +64,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
 class ExceptionHandlingMiddleware(BaseHTTPMiddleware):
     """全局异常兜底中间件。"""
 
-    async def dispatch(self, request: Request, call_next) -> Response:
+    async def dispatch(self, request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
         """捕获未处理异常并返回 500 响应。
 
         Args:

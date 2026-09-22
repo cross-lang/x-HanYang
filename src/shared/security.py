@@ -6,9 +6,17 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
+from typing import Any
 
 import bcrypt
 import jwt
+
+from src.constants.auth import (
+    DEFAULT_JWT_ALGORITHM,
+    DEFAULT_ACCESS_TOKEN_EXPIRE_MINUTES,
+    TOKEN_TYPE_ACCESS,
+    TOKEN_TYPE_REFRESH,
+)
 
 
 def hash_password(password: str) -> str:
@@ -39,9 +47,9 @@ def verify_password(password: str, hashed: str) -> bool:
 def create_access_token(
     subject: str,
     secret_key: str,
-    algorithm: str = "HS256",
-    expires_minutes: int = 10080,
-    extra_claims: dict | None = None,
+    algorithm: str = DEFAULT_JWT_ALGORITHM,
+    expires_minutes: int = DEFAULT_ACCESS_TOKEN_EXPIRE_MINUTES,
+    extra_claims: dict[str, Any] | None = None,
 ) -> str:
     """创建访问令牌。
 
@@ -56,11 +64,11 @@ def create_access_token(
         str: JWT 令牌字符串
     """
     now = datetime.now(timezone.utc)
-    payload = {
+    payload: dict[str, Any] = {
         "sub": subject,
         "iat": now,
         "exp": now + timedelta(minutes=expires_minutes),
-        "type": "access",
+        "type": TOKEN_TYPE_ACCESS,
     }
     if extra_claims:
         payload.update(extra_claims)
@@ -70,8 +78,8 @@ def create_access_token(
 def create_refresh_token(
     subject: str,
     secret_key: str,
-    algorithm: str = "HS256",
-    expires_minutes: int = 10080,
+    algorithm: str = DEFAULT_JWT_ALGORITHM,
+    expires_minutes: int = DEFAULT_ACCESS_TOKEN_EXPIRE_MINUTES,
 ) -> str:
     """创建刷新令牌。
 
@@ -85,16 +93,16 @@ def create_refresh_token(
         str: JWT 刷新令牌字符串
     """
     now = datetime.now(timezone.utc)
-    payload = {
+    payload: dict[str, Any] = {
         "sub": subject,
         "iat": now,
         "exp": now + timedelta(minutes=expires_minutes),
-        "type": "refresh",
+        "type": TOKEN_TYPE_REFRESH,
     }
     return jwt.encode(payload, secret_key, algorithm=algorithm)
 
 
-def decode_token(token: str, secret_key: str, algorithm: str = "HS256") -> dict:
+def decode_token(token: str, secret_key: str, algorithm: str = DEFAULT_JWT_ALGORITHM) -> dict[str, Any]:
     """解码并验证 JWT 令牌。
 
     Args:
@@ -103,7 +111,7 @@ def decode_token(token: str, secret_key: str, algorithm: str = "HS256") -> dict:
         algorithm: 签名算法
 
     Returns:
-        dict: 令牌载荷
+        dict[str, Any]: 令牌载荷
 
     Raises:
         jwt.ExpiredSignatureError: 令牌已过期

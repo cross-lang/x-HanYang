@@ -10,6 +10,8 @@ from fastapi import Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.application.audit.commands.record_login_log import RecordLoginLogHandler
+from src.application.audit.queries.search_login_logs import SearchLoginLogsHandler
 from src.application.auth.commands.login import LoginHandler
 from src.application.auth.commands.refresh_token import RefreshTokenHandler
 from src.application.auth.commands.logout import LogoutHandler
@@ -21,13 +23,21 @@ from src.application.user.commands.update_user import UpdateUserHandler
 from src.application.user.commands.delete_user import DeleteUserHandler
 from src.application.user.queries.get_user import GetUserHandler
 from src.application.user.queries.search_users import SearchUsersHandler
+from src.application.role.commands.create_role import CreateRoleHandler
+from src.application.role.commands.update_role import UpdateRoleHandler
+from src.application.role.commands.delete_role import DeleteRoleHandler
+from src.application.role.queries.get_role import GetRoleHandler
+from src.application.role.queries.search_roles import SearchRolesHandler
 from src.constants.messages import MSG_MISSING_TOKEN, MSG_INVALID_OR_EXPIRED_TOKEN
+from src.domain.audit.repository import LoginLogRepository
 from src.domain.auth.auth_service import AuthDomainService
-from src.domain.user.repository import UserRepository
+from src.domain.user.repository import UserRepository, RoleRepository
 from src.infrastructure.auth.auth_domain_service import InfraAuthDomainService
 from src.infrastructure.config.settings import get_settings
 from src.infrastructure.persistence.database import get_session
+from src.infrastructure.persistence.repositories.login_log_repository import SqlLoginLogRepository
 from src.infrastructure.persistence.repositories.user_repository import SqlUserRepository
+from src.infrastructure.persistence.repositories.role_repository import SqlRoleRepository
 from src.infrastructure.messaging.event_dispatcher import InMemoryEventBus
 
 _bearer_scheme = HTTPBearer(auto_error=False)
@@ -61,16 +71,32 @@ def get_user_repository(session: AsyncSession = Depends(get_session)) -> UserRep
     return SqlUserRepository(session=session)
 
 
+def get_login_log_repository(
+    session: AsyncSession = Depends(get_session),
+) -> LoginLogRepository:
+    """获取登录日志仓储实例（注入异步 Session）。
+
+    Args:
+        session: 异步数据库会话
+
+    Returns:
+        LoginLogRepository: 登录日志仓储实例
+    """
+    return SqlLoginLogRepository(session=session)
+
+
 # ── 认证领域服务 ─────────────────────────────────────
 
 
 def get_auth_domain_service(
     user_repo: UserRepository = Depends(get_user_repository),
+    login_log_repo: LoginLogRepository = Depends(get_login_log_repository),
 ) -> AuthDomainService:
     """获取认证领域服务实例。
 
     Args:
         user_repo: 用户仓储
+        login_log_repo: 登录日志仓储
 
     Returns:
         AuthDomainService: 认证领域服务实例
@@ -81,6 +107,7 @@ def get_auth_domain_service(
         secret_key=settings.auth_secret_key,
         algorithm=settings.auth_algorithm,
         access_token_expire_minutes=settings.auth_access_token_expire_minutes,
+        login_log_repository=login_log_repo,
     )
 
 
@@ -220,6 +247,93 @@ def get_current_user_handler(
         GetCurrentUserHandler: 处理器实例
     """
     return GetCurrentUserHandler(auth_domain_service=auth_service)
+
+
+# ── 审计 Handler ─────────────────────────────────────
+
+
+def get_search_login_logs_handler(
+    login_log_repo: LoginLogRepository = Depends(get_login_log_repository),
+) -> SearchLoginLogsHandler:
+    """获取搜索登录日志处理器。
+
+    Args:
+        login_log_repo: 登录日志仓储
+
+    Returns:
+        SearchLoginLogsHandler: 处理器实例
+    """
+    return SearchLoginLogsHandler(login_log_repository=login_log_repo)
+
+
+def get_record_login_log_handler(
+    login_log_repo: LoginLogRepository = Depends(get_login_log_repository),
+) -> RecordLoginLogHandler:
+    """获取记录登录日志处理器。
+
+    Args:
+        login_log_repo: 登录日志仓储
+
+    Returns:
+        RecordLoginLogHandler: 处理器实例
+    """
+    return RecordLoginLogHandler(login_log_repository=login_log_repo)
+
+
+# ── 角色仓储 ─────────────────────────────────────
+
+
+def get_role_repository(session: AsyncSession = Depends(get_session)) -> RoleRepository:
+    """获取角色仓储实例。
+
+    Args:
+        session: 异步数据库会话
+
+    Returns:
+        RoleRepository: 角色仓储实例
+    """
+    return SqlRoleRepository(session=session)
+
+
+# ── 角色 Handler ─────────────────────────────────
+
+
+def get_create_role_handler(
+    role_repo: RoleRepository = Depends(get_role_repository),
+    event_bus: EventBus = Depends(get_event_bus),
+) -> CreateRoleHandler:
+    """获取创建角色处理器。"""
+    return CreateRoleHandler(role_repository=role_repo, event_bus=event_bus)
+
+
+def get_update_role_handler(
+    role_repo: RoleRepository = Depends(get_role_repository),
+    event_bus: EventBus = Depends(get_event_bus),
+) -> UpdateRoleHandler:
+    """获取更新角色处理器。"""
+    return UpdateRoleHandler(role_repository=role_repo, event_bus=event_bus)
+
+
+def get_delete_role_handler(
+    role_repo: RoleRepository = Depends(get_role_repository),
+    event_bus: EventBus = Depends(get_event_bus),
+) -> DeleteRoleHandler:
+    """获取删除角色处理器。"""
+    return DeleteRoleHandler(role_repository=role_repo, event_bus=event_bus)
+
+
+def get_get_role_handler(
+    role_repo: RoleRepository = Depends(get_role_repository),
+) -> GetRoleHandler:
+    """获取查询角色处理器。"""
+    return GetRoleHandler(role_repository=role_repo)
+
+
+def get_search_roles_handler(
+    role_repo: RoleRepository = Depends(get_role_repository),
+) -> SearchRolesHandler:
+    """获取搜索角色处理器。"""
+    return SearchRolesHandler(role_repository=role_repo)
 
 
 # ── 当前用户 ─────────────────────────────────────────

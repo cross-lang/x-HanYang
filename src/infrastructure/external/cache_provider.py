@@ -118,8 +118,13 @@ def get_cache_provider() -> CacheProvider:
 
     Returns:
         CacheProvider: 缓存提供者实例
+
+    Raises:
+        ValueError: Redis URL 未配置时抛出
     """
     from src.infrastructure.config.settings import get_settings
 
     settings = get_settings()
+    if not settings.redis_url:
+        raise ValueError("REDIS_URL 未配置，无法创建缓存提供者")
     return RedisCacheProvider(url=settings.redis_url)

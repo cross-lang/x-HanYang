@@ -34,7 +34,7 @@ class DatabaseProvider:
         self._session_factory = async_sessionmaker(bind=self._engine, expire_on_commit=False)
 
     @property
-    def engine(self):
+    def engine(self) -> "AsyncEngine":
         """SQLAlchemy 异步引擎。"""
         return self._engine
 

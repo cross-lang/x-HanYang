@@ -1,4 +1,4 @@
-# 汉江（HanJiang）Dockerfile
+# 汉阳（HanYang）Dockerfile
 # 多阶段构建：builder（安装依赖）+ runtime（运行应用）
 
 # ==========================================

@@ -1,4 +1,4 @@
-# 汉江（HanJiang）Docker Compose 配置
+# 汉阳（HanYang）Docker Compose 配置
 # 使用方法：docker-compose up --build
 #
 # 注意：生产环境部署时：
@@ -12,7 +12,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: x-HanJiang
+    container_name: x-HanYang-app
     ports:
       - "8000:8000"
     environment:
@@ -23,7 +23,7 @@ services:
       - MYSQL_PORT=${MYSQL_PORT:-3306}
       - MYSQL_USER=${MYSQL_USER:-root}
       - MYSQL_PASSWORD=${MYSQL_PASSWORD:?MYSQL_PASSWORD is required}
-      - MYSQL_DATABASE=${MYSQL_DATABASE:-hanjiang}
+      - MYSQL_DATABASE=${MYSQL_DATABASE:-hanyang}
       - REDIS_HOST=redis
       - REDIS_PORT=${REDIS_PORT:-6379}
       - REDIS_PASSWORD=${REDIS_PASSWORD:?REDIS_PASSWORD is required}
@@ -59,10 +59,10 @@ services:
 
   mysql:
     image: mysql:8.0
-    container_name: x-HanJiang-mysql
+    container_name: x-HanYang-mysql
     environment:
       - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD is required}
-      - MYSQL_DATABASE=${MYSQL_DATABASE:-hanjiang}
+      - MYSQL_DATABASE=${MYSQL_DATABASE:-hanyang}
       - MYSQL_USER=${MYSQL_USER:-root}
       - MYSQL_PASSWORD=${MYSQL_PASSWORD:?MYSQL_PASSWORD is required}
     command:
@@ -97,7 +97,7 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: x-HanJiang-redis
+    container_name: x-HanYang-redis
     environment:
       - REDIS_USER=${REDIS_USER:-default}
       - REDIS_PASSWORD=${REDIS_PASSWORD:?REDIS_PASSWORD is required}

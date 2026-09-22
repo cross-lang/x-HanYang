@@ -6,7 +6,6 @@ from dataclasses import dataclass
 
 from src.application.shared.event_bus import EventBus
 from src.domain.user.repository import UserRepository
-from src.domain.user.events import UserDeleted
 from src.domain.shared.domain_exception import EntityNotFoundException
 
 
@@ -44,11 +43,11 @@ class DeleteUserHandler:
         if user is None:
             raise EntityNotFoundException(f"用户 {command.user_id} 不存在")
 
-        username = user.username
         user.soft_delete()
         await self._user_repo.save(user)
 
-        # 发布删除事件
-        await self._event_bus.publish(UserDeleted(user_id=command.user_id, username=username))
+        # 从聚合根收集领域事件（soft_delete 内部已添加 UserDeleted 事件）
+        events = user.collect_and_clear_events()
+        await self._event_bus.publish_all(events)
 
         return True

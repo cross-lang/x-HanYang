@@ -1,0 +1,315 @@
+{
+  "info": {
+    "_postman_id": "x-HanYang-collection",
+    "name": "汉阳（HanYang）",
+    "description": "一个基于 DDD 架构的 FastAPI 生产级 Python Web 项目",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8000/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refreshToken",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "api",
+      "item": [
+        {
+          "name": "v1",
+          "item": [
+            {
+              "name": "认证",
+          "item": [
+            {
+              "name": "用户登录",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"account\": \"admin\",\n  \"password\": \"your_password\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/auth/login",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["auth", "login"]
+                },
+                "description": "用户登录接口，支持用户名或邮箱登录。\n\n成功后返回 access_token 和 refresh_token。"
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "var jsonData = pm.response.json();",
+                      "if (jsonData.data && jsonData.data.access_token) {",
+                      "    pm.collectionVariables.set('token', jsonData.data.access_token);",
+                      "}",
+                      "if (jsonData.data && jsonData.data.refresh_token) {",
+                      "    pm.collectionVariables.set('refreshToken', jsonData.data.refresh_token);",
+                      "}"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ]
+            },
+            {
+              "name": "刷新令牌",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"refresh_token\": \"{{refreshToken}}\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/auth/refresh",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["auth", "refresh"]
+                },
+                "description": "使用 refresh_token 换取新的 access_token。\n\n需要在请求体中传入有效的 refresh_token。"
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "var jsonData = pm.response.json();",
+                      "if (jsonData.data && jsonData.data.access_token) {",
+                      "    pm.collectionVariables.set('token', jsonData.data.access_token);",
+                      "}",
+                      "if (jsonData.data && jsonData.data.refresh_token) {",
+                      "    pm.collectionVariables.set('refreshToken', jsonData.data.refresh_token);",
+                      "}"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ]
+            },
+            {
+              "name": "退出登录",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/auth/logout",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["auth", "logout"]
+                },
+                "description": "退出当前登录会话。\n\n需要 Bearer Token 认证。"
+              },
+              "response": []
+            },
+            {
+              "name": "当前用户信息",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/auth/me",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["auth", "me"]
+                },
+                "description": "获取当前登录用户的详细信息。\n\n需要 Bearer Token 认证。"
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "用户管理",
+          "item": [
+            {
+              "name": "创建用户",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"username\": \"newuser\",\n  \"email\": \"newuser@example.com\",\n  \"password\": \"your_password\",\n  \"name\": \"新用户\",\n  \"phone\": \"13800138000\",\n  \"role_id\": 1\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/users",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["users"]
+                },
+                "description": "创建新用户。\n\n需要 Bearer Token 认证。\n\n必填字段：username, email, password\n可选字段：name, phone, role_id"
+              },
+              "response": []
+            },
+            {
+              "name": "用户列表",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/users?keyword=&status=&page=1&page_size=20",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["users"],
+                  "query": [
+                    {
+                      "key": "keyword",
+                      "value": "",
+                      "description": "搜索关键字"
+                    },
+                    {
+                      "key": "status",
+                      "value": "",
+                      "description": "状态过滤"
+                    },
+                    {
+                      "key": "page",
+                      "value": "1",
+                      "description": "页码"
+                    },
+                    {
+                      "key": "page_size",
+                      "value": "20",
+                      "description": "每页数量"
+                    }
+                  ]
+                },
+                "description": "获取用户列表，支持分页和搜索。\n\n需要 Bearer Token 认证。"
+              },
+              "response": []
+            },
+            {
+              "name": "查询用户",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/users/:user_id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["users", ":user_id"],
+                  "variable": [
+                    {
+                      "key": "user_id",
+                      "value": "1",
+                      "description": "用户 ID"
+                    }
+                  ]
+                },
+                "description": "根据用户 ID 查询单个用户详情。\n\n需要 Bearer Token 认证。"
+              },
+              "response": []
+            },
+            {
+              "name": "更新用户",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"updated@example.com\",\n  \"name\": \"更新后姓名\",\n  \"phone\": \"13900139000\",\n  \"avatar_url\": \"https://example.com/avatar.jpg\",\n  \"role_id\": 2,\n  \"password\": \"new_password\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/users/:user_id/update",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["users", ":user_id", "update"],
+                  "variable": [
+                    {
+                      "key": "user_id",
+                      "value": "1",
+                      "description": "用户 ID"
+                    }
+                  ]
+                },
+                "description": "更新指定用户的信息。\n\n需要 Bearer Token 认证。\n\n所有字段均为可选。"
+              },
+              "response": []
+            },
+            {
+              "name": "删除用户",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/users/:user_id/delete",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["users", ":user_id", "delete"],
+                  "variable": [
+                    {
+                      "key": "user_id",
+                      "value": "1",
+                      "description": "用户 ID"
+                    }
+                  ]
+                },
+                "description": "软删除指定用户。\n\n需要 Bearer Token 认证。"
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "健康检查",
+          "item": [
+            {
+              "name": "健康检查",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/health",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["health"]
+                },
+                "description": "服务健康检查接口。\n\n无需认证。"
+              },
+              "response": []
+            }
+          ]
+        }
+      ]
+    }
+      ]
+    }
+  ]
+}

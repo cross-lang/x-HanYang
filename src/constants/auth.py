@@ -18,3 +18,10 @@ DEFAULT_TOKEN_EXPIRES_IN_SECONDS: int = 604800  # 7 天
 # ── 密码强度 ─────────────────────────────────────
 PASSWORD_MIN_LENGTH: int = 8
 PASSWORD_MAX_LENGTH: int = 128
+
+# ── 登录日志 ─────────────────────────────────────
+LOGIN_TYPE_PASSWORD: str = "password"
+LOGIN_TYPE_WECHAT: str = "wechat"
+LOGIN_TYPE_GITHUB: str = "github"
+LOGIN_STATUS_SUCCESS: str = "success"
+LOGIN_STATUS_FAILED: str = "failed"

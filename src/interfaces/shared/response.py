@@ -2,12 +2,10 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 from starlette.requests import Request
 
 
-def success_response(data: Any, request: Request, code: int = 200) -> dict:
+def success_response(data: object, request: Request, code: int = 200) -> dict[str, object]:
     """构造成功响应。
 
     Args:
@@ -16,7 +14,7 @@ def success_response(data: Any, request: Request, code: int = 200) -> dict:
         code: 业务状态码
 
     Returns:
-        dict: 统一格式的响应体
+        dict[str, object]: 统一格式的响应体
     """
     request_id = getattr(request.state, "request_id", None)
     return {
@@ -27,8 +25,17 @@ def success_response(data: Any, request: Request, code: int = 200) -> dict:
     }
 
 
-def error_response(message: str, code: int = 400, data: Any = None) -> dict:
-    """构造错误响应。"""
+def error_response(message: str, code: int = 400, data: object = None) -> dict[str, object]:
+    """构造错误响应。
+
+    Args:
+        message: 错误消息
+        code: 业务状态码
+        data: 附加数据
+
+    Returns:
+        dict[str, object]: 统一格式的错误响应体
+    """
     return {
         "code": code,
         "message": message,

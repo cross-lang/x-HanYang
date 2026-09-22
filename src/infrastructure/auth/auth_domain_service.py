@@ -6,12 +6,17 @@
 
 from __future__ import annotations
 
+import logging
+
 import jwt
 
 from src.constants.auth import (
     AUTH_SCHEME,
     DEFAULT_JWT_ALGORITHM,
     DEFAULT_ACCESS_TOKEN_EXPIRE_MINUTES,
+    LOGIN_TYPE_PASSWORD,
+    LOGIN_STATUS_SUCCESS,
+    LOGIN_STATUS_FAILED,
 )
 from src.constants.messages import (
     MSG_INVALID_CREDENTIALS,
@@ -24,16 +29,21 @@ from src.constants.messages import (
     MSG_USER_NOT_FOUND,
 )
 from src.constants.auth import TOKEN_TYPE_ACCESS, TOKEN_TYPE_REFRESH
+from src.domain.audit.login_log import LoginLog
+from src.domain.audit.repository import LoginLogRepository
 from src.domain.auth.auth_service import AuthDomainService, CurrentUser, TokenPair
 from src.domain.shared.domain_exception import AuthenticationException
 from src.domain.user.repository import UserRepository
 from src.shared.security import create_access_token, create_refresh_token, decode_token
+
+logger = logging.getLogger(__name__)
 
 
 class InfraAuthDomainService(AuthDomainService):
     """认证领域服务实现。
 
     通过 UserRepository 查询用户，使用 JWT 实现令牌签发与验证。
+    可选注入 LoginLogRepository 以记录登录日志。
     所有方法均为异步。
     """
 
@@ -43,16 +53,18 @@ class InfraAuthDomainService(AuthDomainService):
         secret_key: str,
         algorithm: str = DEFAULT_JWT_ALGORITHM,
         access_token_expire_minutes: int = DEFAULT_ACCESS_TOKEN_EXPIRE_MINUTES,
+        login_log_repository: LoginLogRepository | None = None,
     ) -> None:
         self._user_repo = user_repository
         self._secret_key = secret_key
         self._algorithm = algorithm
         self._access_token_expire_minutes = access_token_expire_minutes
+        self._login_log_repo = login_log_repository
 
     async def authenticate(self, account: str, password: str, ip_address: str | None = None) -> TokenPair:
         """用户认证（登录）。
 
-        支持用户名或邮箱登录。
+        支持用户名或邮箱登录。成功或失败均记录登录日志。
 
         Args:
             account: 用户名或邮箱
@@ -70,26 +82,34 @@ class InfraAuthDomainService(AuthDomainService):
         if user is None:
             user = await self._user_repo.find_by_email(account)
         if user is None:
+            await self._record_login_log(None, LOGIN_STATUS_FAILED, ip_address)
             raise AuthenticationException(MSG_INVALID_CREDENTIALS)
 
         if user.is_deleted:
+            await self._record_login_log(user.id, LOGIN_STATUS_FAILED, ip_address)
             raise AuthenticationException(MSG_INVALID_CREDENTIALS)
 
         if user.is_locked:
+            await self._record_login_log(user.id, LOGIN_STATUS_FAILED, ip_address)
             raise AuthenticationException(MSG_ACCOUNT_LOCKED)
 
         if not user.password_hash:
+            await self._record_login_log(user.id, LOGIN_STATUS_FAILED, ip_address)
             raise AuthenticationException(MSG_INVALID_CREDENTIALS)
 
         from src.domain.user.value_objects import Password
 
         password_vo = Password.from_hashed(user.password_hash)
         if not password_vo.verify(password):
+            await self._record_login_log(user.id, LOGIN_STATUS_FAILED, ip_address)
             raise AuthenticationException(MSG_INVALID_CREDENTIALS)
 
         # 记录登录
         user.record_login(ip_address)
         await self._user_repo.save(user)
+
+        # 记录成功登录日志
+        await self._record_login_log(user.id, LOGIN_STATUS_SUCCESS, ip_address)
 
         # 签发令牌
         subject = str(user.id)
@@ -210,3 +230,29 @@ class InfraAuthDomainService(AuthDomainService):
         Args:
             user_id: 用户 ID
         """
+
+    async def _record_login_log(
+        self, user_id: int | None, status: str, ip_address: str | None
+    ) -> None:
+        """记录登录日志。
+
+        通过 LoginLogRepository 持久化登录行为。
+        记录失败时仅打印警告日志，不影响主流程。
+
+        Args:
+            user_id: 登录用户 ID（未识别用户时为 None）
+            status: 登录状态（success、failed）
+            ip_address: 客户端 IP 地址
+        """
+        if not self._login_log_repo:
+            return
+        try:
+            log = LoginLog(
+                user_id=user_id,
+                login_type=LOGIN_TYPE_PASSWORD,
+                status=status,
+                ip_address=ip_address,
+            )
+            await self._login_log_repo.save(log)
+        except Exception:
+            logger.warning("记录登录日志失败: user_id=%s, status=%s", user_id, status, exc_info=True)

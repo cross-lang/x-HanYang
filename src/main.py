@@ -25,11 +25,16 @@ from __future__ import annotations
 from contextlib import asynccontextmanager
 
 import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from slowapi import Limiter
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 
 from src.constants.app import APP_NAME, APP_VERSION, APP_DESCRIPTION
 from src.constants.http import DOCS_URL, REDOC_URL
+from src.constants.messages import MSG_INTERNAL_SERVER_ERROR
 from src.interfaces.http.router import api_router
 from src.interfaces.http.middleware import (
     ExceptionHandlingMiddleware,
@@ -38,6 +43,7 @@ from src.interfaces.http.middleware import (
 )
 from src.interfaces.http.exception_handlers import register_exception_handlers
 from src.infrastructure.config.settings import get_settings
+from src.infrastructure.external.rate_limiter import get_limiter
 from src.shared.logger import logger
 
 _has_db: bool = False
@@ -132,9 +138,23 @@ def create_app() -> FastAPI:
         redoc_url=REDOC_URL,
     )
 
+    # 限流器
+    limiter: Limiter = get_limiter()
+    app.state.limiter = limiter
+
+    # 限流超限处理
+    @app.exception_handler(RateLimitExceeded)
+    async def rate_limit_handler(request: Request, exc: RateLimitExceeded) -> JSONResponse:
+        """速率限制超限处理。"""
+        return JSONResponse(
+            status_code=429,
+            content={"code": 429, "message": "请求过于频繁，请稍后重试", "data": None},
+        )
+
     # 中间件顺序：后注册的在外层
     app.add_middleware(ExceptionHandlingMiddleware)
     app.add_middleware(RequestLoggingMiddleware)
+    app.add_middleware(SlowAPIMiddleware)
     app.add_middleware(RequestIDMiddleware)
 
     # CORS（最后注册 → 最外层）

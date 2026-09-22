@@ -15,7 +15,7 @@ from src.domain.user.user import User
 T = TypeVar("T")
 
 
-@dataclass
+@dataclass(frozen=True)
 class UserDTO:
     """用户输出 DTO。
 
@@ -76,7 +76,7 @@ class UserDTO:
         )
 
 
-@dataclass
+@dataclass(frozen=True)
 class PaginatedResult(Generic[T]):
     """分页结果。
 
