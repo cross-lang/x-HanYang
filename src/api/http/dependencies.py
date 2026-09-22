@@ -22,14 +22,10 @@ from src.infrastructure.auth.auth_domain_service import InfraAuthDomainService
 from src.core.config import get_settings
 from src.infrastructure.persistence.database import get_session
 from src.infrastructure.persistence.unit_of_work import SqlUnitOfWork
-from src.infrastructure.messaging.event_dispatcher import InMemoryEventBus
+from src.infrastructure.messaging.event_dispatcher import get_event_bus as _get_event_bus
 from src.core.logger import logger
 
 _bearer_scheme = HTTPBearer(auto_error=False)
-
-# ── 全局单例 ─────────────────────────────────────────
-
-_event_bus: EventBus = InMemoryEventBus()
 
 
 # ── 共享依赖 ──────────────────────────────────────────
@@ -41,7 +37,7 @@ def get_event_bus() -> EventBus:
     Returns:
         EventBus: 事件总线实例
     """
-    return _event_bus
+    return _get_event_bus()
 
 
 def get_uow(session: AsyncSession = Depends(get_session)) -> UnitOfWork:

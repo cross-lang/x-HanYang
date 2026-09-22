@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from src.application.shared.event_bus import EventBus
-from src.application.shared.paginated_result import PaginatedResult
+from src.application.shared.common import PaginatedResult
 from src.application.shared.unit_of_work import UnitOfWork
 from src.constants.pagination import DEFAULT_PAGE, DEFAULT_PAGE_SIZE
 from src.domain.user.role import Role, RoleType, RoleStatus

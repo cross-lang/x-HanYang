@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 
-from src.application.shared.paginated_result import PaginatedResult
+from src.application.shared.common import PaginatedResult
 from src.application.shared.unit_of_work import UnitOfWork
 from src.constants.pagination import DEFAULT_PAGE, DEFAULT_PAGE_SIZE
 from src.domain.audit.login_log import LoginLog

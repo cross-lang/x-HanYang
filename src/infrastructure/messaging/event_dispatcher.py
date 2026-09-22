@@ -1,6 +1,7 @@
 """异步内存事件总线实现。
 
 初期使用内存事件总线，后期可替换为 MQ（如 RabbitMQ、Kafka）。
+通过 get_event_bus() 获取全局单例，确保事件处理器注册和发布使用同一实例。
 """
 
 from __future__ import annotations
@@ -58,3 +59,20 @@ class InMemoryEventBus(EventBus):
             handler: 事件处理函数（同步或异步均可）
         """
         self._handlers[event_type].append(handler)
+
+
+# ── 全局单例 ─────────────────────────────────────
+
+_event_bus_instance: InMemoryEventBus | None = None
+
+
+def get_event_bus() -> InMemoryEventBus:
+    """获取全局事件总线单例。
+
+    Returns:
+        InMemoryEventBus: 事件总线实例
+    """
+    global _event_bus_instance
+    if _event_bus_instance is None:
+        _event_bus_instance = InMemoryEventBus()
+    return _event_bus_instance

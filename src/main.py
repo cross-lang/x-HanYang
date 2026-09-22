@@ -85,6 +85,12 @@ async def lifespan(app: FastAPI):
     else:
         logger.info("Database URL not configured, database features disabled")
 
+    # 注册领域事件处理器
+    from src.infrastructure.messaging.event_dispatcher import get_event_bus
+    from src.infrastructure.messaging.handlers import register_event_handlers
+    register_event_handlers(get_event_bus())
+    logger.info("Event handlers registered")
+
     yield
 
     logger.info(f"{APP_NAME} shutting down...")

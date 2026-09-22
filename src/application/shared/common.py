@@ -1,4 +1,4 @@
-"""分页结果 DTO。"""
+"""应用层公共数据结构。"""
 
 from __future__ import annotations
 
