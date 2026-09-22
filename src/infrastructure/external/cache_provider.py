@@ -1,60 +1,125 @@
-"""Redis 缓存提供者。"""
+"""缓存提供者。
+
+基础设施层定义接口契约，业务层仅依赖抽象接口。
+"""
 
 from __future__ import annotations
 
+from abc import ABC, abstractmethod
 from functools import lru_cache
 
-import redis
+import redis.asyncio as aioredis
 
 from src.shared.logger import logger
 
 
-class CacheProvider:
-    """Redis 缓存提供者。"""
+class CacheProvider(ABC):
+    """缓存提供者接口。
+
+    所有缓存实现必须继承此类，便于替换和单元测试 Mock。
+    """
+
+    @abstractmethod
+    async def get(self, key: str) -> str | None:
+        """获取缓存值。
+
+        Args:
+            key: 缓存键
+
+        Returns:
+            str | None: 缓存值，不存在时返回 None
+        """
+
+    @abstractmethod
+    async def set(self, key: str, value: str, ttl: int | None = None) -> None:
+        """设置缓存值。
+
+        Args:
+            key: 缓存键
+            value: 缓存值
+            ttl: 过期时间（秒）
+        """
+
+    @abstractmethod
+    async def delete(self, key: str) -> None:
+        """删除缓存。
+
+        Args:
+            key: 缓存键
+        """
+
+    @abstractmethod
+    async def atomic_incr(self, key: str, ttl: int | None = None) -> int:
+        """原子递增。
+
+        Args:
+            key: 缓存键
+            ttl: 首次递增时设置的过期时间（秒）
+
+        Returns:
+            int: 递增后的值
+        """
+
+    @abstractmethod
+    async def close(self) -> None:
+        """关闭连接。"""
+
+
+class RedisCacheProvider(CacheProvider):
+    """Redis 缓存提供者异步实现。"""
 
     def __init__(self, url: str) -> None:
-        self._client = redis.from_url(url, decode_responses=True)
+        self._client = aioredis.from_url(url, decode_responses=True)
 
-    def get(self, key: str) -> str | None:
+    async def get(self, key: str) -> str | None:
+        """获取缓存值。"""
         try:
-            return self._client.get(key)
+            return await self._client.get(key)
         except Exception as e:
             logger.warning(f"Redis GET 失败: {e}")
             return None
 
-    def set(self, key: str, value: str, ttl: int | None = None) -> None:
+    async def set(self, key: str, value: str, ttl: int | None = None) -> None:
+        """设置缓存值。"""
         try:
             if ttl:
-                self._client.setex(key, ttl, value)
+                await self._client.setex(key, ttl, value)
             else:
-                self._client.set(key, value)
+                await self._client.set(key, value)
         except Exception as e:
             logger.warning(f"Redis SET 失败: {e}")
 
-    def delete(self, key: str) -> None:
+    async def delete(self, key: str) -> None:
+        """删除缓存。"""
         try:
-            self._client.delete(key)
+            await self._client.delete(key)
         except Exception as e:
             logger.warning(f"Redis DELETE 失败: {e}")
 
-    def atomic_incr(self, key: str, ttl: int | None = None) -> int:
+    async def atomic_incr(self, key: str, ttl: int | None = None) -> int:
+        """原子递增。"""
         try:
-            value = self._client.incr(key)
+            value = await self._client.incr(key)
             if ttl and value == 1:
-                self._client.expire(key, ttl)
+                await self._client.expire(key, ttl)
             return value
         except Exception as e:
             logger.warning(f"Redis INCR 失败: {e}")
             return 0
 
-    def close(self) -> None:
-        self._client.close()
+    async def close(self) -> None:
+        """关闭连接。"""
+        await self._client.aclose()
 
 
 @lru_cache(maxsize=1)
 def get_cache_provider() -> CacheProvider:
-    """获取缓存提供者实例（缓存）。"""
+    """获取缓存提供者实例（缓存）。
+
+    Returns:
+        CacheProvider: 缓存提供者实例
+    """
     from src.infrastructure.config.settings import get_settings
 
     settings = get_settings()
-    return CacheProvider(url=settings.redis_url)
+    return RedisCacheProvider(url=settings.redis_url)

@@ -12,7 +12,7 @@ class AuditLogRepository(Repository[AuditLog]):
     """审计日志仓储接口。"""
 
     @abstractmethod
-    def find_by_entity(
+    async def find_by_entity(
         self, entity_type: str, entity_id: int, skip: int = 0, limit: int = 50
     ) -> tuple[list[AuditLog], int]:
         """按实体查找审计日志（分页）。

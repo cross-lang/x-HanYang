@@ -4,20 +4,40 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from src.constants.auth import AUTH_SCHEME, DEFAULT_TOKEN_EXPIRES_IN_SECONDS
+
 
 @dataclass(frozen=True)
 class TokenPairDTO:
-    """令牌对 DTO。"""
+    """令牌对 DTO。
+
+    Attributes:
+        access_token: 访问令牌
+        refresh_token: 刷新令牌
+        token_type: 令牌类型
+        expires_in: 访问令牌有效期（秒）
+    """
 
     access_token: str
     refresh_token: str
-    token_type: str = "Bearer"
-    expires_in: int = 604800
+    token_type: str = AUTH_SCHEME
+    expires_in: int = DEFAULT_TOKEN_EXPIRES_IN_SECONDS
 
 
 @dataclass(frozen=True)
 class CurrentUserDTO:
-    """当前用户 DTO。"""
+    """当前用户 DTO。
+
+    Attributes:
+        id: 用户 ID
+        username: 用户名
+        email: 邮箱
+        name: 姓名
+        role_id: 角色 ID
+        role_code: 角色编码
+        status: 状态
+        avatar_url: 头像 URL
+    """
 
     id: int
     username: str

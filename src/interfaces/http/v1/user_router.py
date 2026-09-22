@@ -3,6 +3,8 @@
 接口层只做请求解析和响应格式化，业务逻辑委托给应用层 Handler。
 """
 
+from __future__ import annotations
+
 from fastapi import APIRouter, Depends, Request
 
 from src.application.user.commands.create_user import CreateUserCommand, CreateUserHandler
@@ -10,6 +12,8 @@ from src.application.user.commands.update_user import UpdateUserCommand, UpdateU
 from src.application.user.commands.delete_user import DeleteUserCommand, DeleteUserHandler
 from src.application.user.queries.get_user import GetUserQuery, GetUserHandler
 from src.application.user.queries.search_users import SearchUsersQuery, SearchUsersHandler
+from src.application.auth.dto.auth_dto import CurrentUserDTO
+from src.constants.messages import MSG_USER_DELETED
 from src.interfaces.http.dependencies import (
     get_create_user_handler,
     get_update_user_handler,
@@ -19,7 +23,6 @@ from src.interfaces.http.dependencies import (
     get_current_user_dep,
 )
 from src.interfaces.shared.response import success_response
-from src.application.auth.dto.auth_dto import CurrentUserDTO
 
 router = APIRouter(prefix="/users", tags=["用户管理"])
 
@@ -30,10 +33,10 @@ async def create_user(
     request: Request,
     handler: CreateUserHandler = Depends(get_create_user_handler),
     current_user: CurrentUserDTO = Depends(get_current_user_dep),
-):
+) -> dict:
     """创建用户接口。"""
     command = CreateUserCommand(**body)
-    result = handler.handle(command)
+    result = await handler.handle(command)
     return success_response(
         {"id": result.id, "username": result.username, "email": result.email.value},
         request,
@@ -50,10 +53,10 @@ async def list_users(
     page_size: int = 20,
     handler: SearchUsersHandler = Depends(get_search_users_handler),
     current_user: CurrentUserDTO = Depends(get_current_user_dep),
-):
+) -> dict:
     """用户列表接口。"""
     query = SearchUsersQuery(keyword=keyword, status=status, page=page, page_size=page_size)
-    result = handler.handle(query)
+    result = await handler.handle(query)
     return success_response(
         {
             "items": [vars(item) for item in result.items],
@@ -72,9 +75,9 @@ async def get_user(
     request: Request,
     handler: GetUserHandler = Depends(get_get_user_handler),
     current_user: CurrentUserDTO = Depends(get_current_user_dep),
-):
+) -> dict:
     """查询单个用户接口。"""
-    result = handler.handle(GetUserQuery(user_id=user_id))
+    result = await handler.handle(GetUserQuery(user_id=user_id))
     return success_response(vars(result), request)
 
 
@@ -85,10 +88,10 @@ async def update_user(
     request: Request,
     handler: UpdateUserHandler = Depends(get_update_user_handler),
     current_user: CurrentUserDTO = Depends(get_current_user_dep),
-):
+) -> dict:
     """更新用户接口。"""
     command = UpdateUserCommand(user_id=user_id, **body)
-    result = handler.handle(command)
+    result = await handler.handle(command)
     return success_response(
         {"id": result.id, "username": result.username, "email": result.email.value},
         request,
@@ -101,7 +104,7 @@ async def delete_user(
     request: Request,
     handler: DeleteUserHandler = Depends(get_delete_user_handler),
     current_user: CurrentUserDTO = Depends(get_current_user_dep),
-):
+) -> dict:
     """删除用户接口（软删除）。"""
-    handler.handle(DeleteUserCommand(user_id=user_id))
-    return success_response({"message": "用户删除成功"}, request)
+    await handler.handle(DeleteUserCommand(user_id=user_id))
+    return success_response({"message": MSG_USER_DELETED}, request)

@@ -6,9 +6,9 @@
 
 from __future__ import annotations
 
-from fastapi import Depends, Request
+from fastapi import Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.application.auth.commands.login import LoginHandler
 from src.application.auth.commands.refresh_token import RefreshTokenHandler
@@ -21,6 +21,7 @@ from src.application.user.commands.update_user import UpdateUserHandler
 from src.application.user.commands.delete_user import DeleteUserHandler
 from src.application.user.queries.get_user import GetUserHandler
 from src.application.user.queries.search_users import SearchUsersHandler
+from src.constants.messages import MSG_MISSING_TOKEN, MSG_INVALID_OR_EXPIRED_TOKEN
 from src.domain.auth.auth_service import AuthDomainService
 from src.domain.user.repository import UserRepository
 from src.infrastructure.auth.auth_domain_service import InfraAuthDomainService
@@ -40,12 +41,23 @@ _event_bus: EventBus = InMemoryEventBus()
 
 
 def get_event_bus() -> EventBus:
-    """获取事件总线单例。"""
+    """获取事件总线单例。
+
+    Returns:
+        EventBus: 事件总线实例
+    """
     return _event_bus
 
 
-def get_user_repository(session: Session = Depends(get_session)) -> UserRepository:
-    """获取用户仓储实例（注入 SQLAlchemy Session）。"""
+def get_user_repository(session: AsyncSession = Depends(get_session)) -> UserRepository:
+    """获取用户仓储实例（注入异步 Session）。
+
+    Args:
+        session: 异步数据库会话
+
+    Returns:
+        UserRepository: 用户仓储实例
+    """
     return SqlUserRepository(session=session)
 
 
@@ -55,7 +67,14 @@ def get_user_repository(session: Session = Depends(get_session)) -> UserReposito
 def get_auth_domain_service(
     user_repo: UserRepository = Depends(get_user_repository),
 ) -> AuthDomainService:
-    """获取认证领域服务实例。"""
+    """获取认证领域服务实例。
+
+    Args:
+        user_repo: 用户仓储
+
+    Returns:
+        AuthDomainService: 认证领域服务实例
+    """
     settings = get_settings()
     return InfraAuthDomainService(
         user_repository=user_repo,
@@ -72,6 +91,15 @@ def get_create_user_handler(
     user_repo: UserRepository = Depends(get_user_repository),
     event_bus: EventBus = Depends(get_event_bus),
 ) -> CreateUserHandler:
+    """获取创建用户处理器。
+
+    Args:
+        user_repo: 用户仓储
+        event_bus: 事件总线
+
+    Returns:
+        CreateUserHandler: 处理器实例
+    """
     return CreateUserHandler(user_repository=user_repo, event_bus=event_bus)
 
 
@@ -79,6 +107,15 @@ def get_update_user_handler(
     user_repo: UserRepository = Depends(get_user_repository),
     event_bus: EventBus = Depends(get_event_bus),
 ) -> UpdateUserHandler:
+    """获取更新用户处理器。
+
+    Args:
+        user_repo: 用户仓储
+        event_bus: 事件总线
+
+    Returns:
+        UpdateUserHandler: 处理器实例
+    """
     return UpdateUserHandler(user_repository=user_repo, event_bus=event_bus)
 
 
@@ -86,18 +123,43 @@ def get_delete_user_handler(
     user_repo: UserRepository = Depends(get_user_repository),
     event_bus: EventBus = Depends(get_event_bus),
 ) -> DeleteUserHandler:
+    """获取删除用户处理器。
+
+    Args:
+        user_repo: 用户仓储
+        event_bus: 事件总线
+
+    Returns:
+        DeleteUserHandler: 处理器实例
+    """
     return DeleteUserHandler(user_repository=user_repo, event_bus=event_bus)
 
 
 def get_get_user_handler(
     user_repo: UserRepository = Depends(get_user_repository),
 ) -> GetUserHandler:
+    """获取查询用户处理器。
+
+    Args:
+        user_repo: 用户仓储
+
+    Returns:
+        GetUserHandler: 处理器实例
+    """
     return GetUserHandler(user_repository=user_repo)
 
 
 def get_search_users_handler(
     user_repo: UserRepository = Depends(get_user_repository),
 ) -> SearchUsersHandler:
+    """获取搜索用户处理器。
+
+    Args:
+        user_repo: 用户仓储
+
+    Returns:
+        SearchUsersHandler: 处理器实例
+    """
     return SearchUsersHandler(user_repository=user_repo)
 
 
@@ -107,44 +169,85 @@ def get_search_users_handler(
 def get_login_handler(
     auth_service: AuthDomainService = Depends(get_auth_domain_service),
 ) -> LoginHandler:
+    """获取登录处理器。
+
+    Args:
+        auth_service: 认证领域服务
+
+    Returns:
+        LoginHandler: 处理器实例
+    """
     return LoginHandler(auth_domain_service=auth_service)
 
 
 def get_refresh_token_handler(
     auth_service: AuthDomainService = Depends(get_auth_domain_service),
 ) -> RefreshTokenHandler:
+    """获取刷新令牌处理器。
+
+    Args:
+        auth_service: 认证领域服务
+
+    Returns:
+        RefreshTokenHandler: 处理器实例
+    """
     return RefreshTokenHandler(auth_domain_service=auth_service)
 
 
 def get_logout_handler(
     auth_service: AuthDomainService = Depends(get_auth_domain_service),
 ) -> LogoutHandler:
+    """获取退出登录处理器。
+
+    Args:
+        auth_service: 认证领域服务
+
+    Returns:
+        LogoutHandler: 处理器实例
+    """
     return LogoutHandler(auth_domain_service=auth_service)
 
 
 def get_current_user_handler(
     auth_service: AuthDomainService = Depends(get_auth_domain_service),
 ) -> GetCurrentUserHandler:
+    """获取当前用户查询处理器。
+
+    Args:
+        auth_service: 认证领域服务
+
+    Returns:
+        GetCurrentUserHandler: 处理器实例
+    """
     return GetCurrentUserHandler(auth_domain_service=auth_service)
 
 
 # ── 当前用户 ─────────────────────────────────────────
 
 
-def get_current_user_dep(
+async def get_current_user_dep(
     credentials: HTTPAuthorizationCredentials | None = Depends(_bearer_scheme),
     auth_service: AuthDomainService = Depends(get_auth_domain_service),
 ) -> CurrentUserDTO:
-    """解析 Bearer 令牌，返回当前用户。"""
-    from fastapi import HTTPException
+    """解析 Bearer 令牌，返回当前用户。
 
+    Args:
+        credentials: HTTP Bearer 令牌
+        auth_service: 认证领域服务
+
+    Returns:
+        CurrentUserDTO: 当前用户信息
+
+    Raises:
+        HTTPException: 401 缺少令牌或令牌无效
+    """
     if credentials is None:
-        raise HTTPException(status_code=401, detail="缺少认证令牌")
+        raise HTTPException(status_code=401, detail=MSG_MISSING_TOKEN)
 
     try:
-        current_user = auth_service.get_current_user(credentials.credentials)
+        current_user = await auth_service.get_current_user(credentials.credentials)
     except Exception:
-        raise HTTPException(status_code=401, detail="无效或过期的令牌")
+        raise HTTPException(status_code=401, detail=MSG_INVALID_OR_EXPIRED_TOKEN)
 
     return CurrentUserDTO(
         id=current_user.id,

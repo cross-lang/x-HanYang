@@ -17,7 +17,16 @@ from src.domain.shared.domain_exception import ConflictException
 
 @dataclass(frozen=True)
 class CreateUserCommand:
-    """创建用户命令。"""
+    """创建用户命令。
+
+    Attributes:
+        username: 用户名
+        email: 邮箱
+        password: 明文密码
+        name: 姓名
+        phone: 手机号
+        role_id: 角色 ID
+    """
 
     username: str
     email: str
@@ -41,7 +50,7 @@ class CreateUserHandler:
         self._user_repo = user_repository
         self._event_bus = event_bus
 
-    def handle(self, command: CreateUserCommand) -> User:
+    async def handle(self, command: CreateUserCommand) -> User:
         """执行创建用户命令。
 
         Args:
@@ -55,9 +64,9 @@ class CreateUserHandler:
         """
         # 1. 校验唯一性
         email = Email(command.email)
-        if self._user_repo.find_by_email(email.value) is not None:
+        if await self._user_repo.find_by_email(email.value) is not None:
             raise ConflictException(f"邮箱 {command.email} 已被注册")
-        if self._user_repo.find_by_username(command.username) is not None:
+        if await self._user_repo.find_by_username(command.username) is not None:
             raise ConflictException(f"用户名 {command.username} 已存在")
 
         # 2. 创建用户（领域逻辑内聚在聚合根中）
@@ -72,10 +81,10 @@ class CreateUserHandler:
         )
 
         # 3. 持久化
-        self._user_repo.save(user)
+        await self._user_repo.save(user)
 
         # 4. 分发领域事件
         events = user.collect_and_clear_events()
-        self._event_bus.publish_all(events)
+        await self._event_bus.publish_all(events)
 
         return user

@@ -5,17 +5,25 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from src.application.user.dto.user_dto import UserDTO, PaginatedResult
+from src.constants.pagination import DEFAULT_PAGE, DEFAULT_PAGE_SIZE
 from src.domain.user.repository import UserRepository
 
 
 @dataclass(frozen=True)
 class SearchUsersQuery:
-    """搜索用户列表查询。"""
+    """搜索用户列表查询。
+
+    Attributes:
+        keyword: 关键字（匹配用户名或邮箱）
+        status: 状态过滤
+        page: 页码（从 1 开始）
+        page_size: 每页数量
+    """
 
     keyword: str | None = None
     status: str | None = None
-    page: int = 1
-    page_size: int = 20
+    page: int = DEFAULT_PAGE
+    page_size: int = DEFAULT_PAGE_SIZE
 
 
 class SearchUsersHandler:
@@ -24,7 +32,7 @@ class SearchUsersHandler:
     def __init__(self, user_repository: UserRepository) -> None:
         self._user_repo = user_repository
 
-    def handle(self, query: SearchUsersQuery) -> PaginatedResult[UserDTO]:
+    async def handle(self, query: SearchUsersQuery) -> PaginatedResult[UserDTO]:
         """执行搜索。
 
         Args:
@@ -34,7 +42,7 @@ class SearchUsersHandler:
             PaginatedResult[UserDTO]: 分页结果
         """
         skip = (query.page - 1) * query.page_size
-        users, total = self._user_repo.search(
+        users, total = await self._user_repo.search(
             keyword=query.keyword,
             status=query.status,
             skip=skip,

@@ -9,7 +9,11 @@ from src.domain.auth.auth_service import AuthDomainService
 
 @dataclass(frozen=True)
 class LogoutCommand:
-    """退出登录命令。"""
+    """退出登录命令。
+
+    Attributes:
+        user_id: 用户 ID
+    """
 
     user_id: int
 
@@ -20,10 +24,10 @@ class LogoutHandler:
     def __init__(self, auth_domain_service: AuthDomainService) -> None:
         self._auth_service = auth_domain_service
 
-    def handle(self, command: LogoutCommand) -> None:
+    async def handle(self, command: LogoutCommand) -> None:
         """执行退出登录。
 
         Args:
             command: 退出登录命令
         """
-        self._auth_service.logout(command.user_id)
+        await self._auth_service.logout(command.user_id)

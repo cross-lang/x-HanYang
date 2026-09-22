@@ -10,7 +10,11 @@ from src.domain.auth.auth_service import AuthDomainService
 
 @dataclass(frozen=True)
 class GetCurrentUserQuery:
-    """获取当前用户查询。"""
+    """获取当前用户查询。
+
+    Attributes:
+        token: 访问令牌
+    """
 
     token: str
 
@@ -21,7 +25,7 @@ class GetCurrentUserHandler:
     def __init__(self, auth_domain_service: AuthDomainService) -> None:
         self._auth_service = auth_domain_service
 
-    def handle(self, query: GetCurrentUserQuery) -> CurrentUserDTO:
+    async def handle(self, query: GetCurrentUserQuery) -> CurrentUserDTO:
         """执行查询。
 
         Args:
@@ -30,7 +34,7 @@ class GetCurrentUserHandler:
         Returns:
             CurrentUserDTO: 当前用户信息
         """
-        current_user = self._auth_service.get_current_user(query.token)
+        current_user = await self._auth_service.get_current_user(query.token)
         return CurrentUserDTO(
             id=current_user.id,
             username=current_user.username,

@@ -1,22 +1,25 @@
 """事件总线接口。
 
 应用层定义事件总线抽象，基础设施层提供实现。
-支持领域事件的同步/异步分发。
+支持领域事件的异步分发。
 """
 
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Callable
+from collections.abc import Awaitable, Callable
 
 from src.domain.shared.domain_event import DomainEvent
+
+# 事件处理函数类型：可为同步或异步函数
+EventHandler = Callable[[DomainEvent], Awaitable[None] | None]
 
 
 class EventBus(ABC):
     """事件总线接口。"""
 
     @abstractmethod
-    def publish(self, event: DomainEvent) -> None:
+    async def publish(self, event: DomainEvent) -> None:
         """发布单个领域事件。
 
         Args:
@@ -24,7 +27,7 @@ class EventBus(ABC):
         """
 
     @abstractmethod
-    def publish_all(self, events: list[DomainEvent]) -> None:
+    async def publish_all(self, events: list[DomainEvent]) -> None:
         """批量发布领域事件。
 
         Args:
@@ -32,7 +35,7 @@ class EventBus(ABC):
         """
 
     @abstractmethod
-    def subscribe(self, event_type: type[DomainEvent], handler: Callable[[DomainEvent], None]) -> None:
+    def subscribe(self, event_type: type[DomainEvent], handler: EventHandler) -> None:
         """订阅指定类型的领域事件。
 
         Args:

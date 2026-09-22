@@ -10,6 +10,7 @@ import re
 from dataclasses import dataclass
 from enum import Enum
 
+from src.constants.auth import PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH
 from src.domain.shared.domain_exception import ValidationException
 from src.domain.shared.value_object import ValueObject
 
@@ -64,10 +65,10 @@ class Password(ValueObject):
         # 从哈希构造时（_raw 为空）跳过长度校验
         if not self._raw:
             return
-        if len(self._raw) < 8:
-            raise ValidationException("密码长度不能少于8位")
-        if len(self._raw) > 128:
-            raise ValidationException("密码长度不能超过128位")
+        if len(self._raw) < PASSWORD_MIN_LENGTH:
+            raise ValidationException(f"密码长度不能少于{PASSWORD_MIN_LENGTH}位")
+        if len(self._raw) > PASSWORD_MAX_LENGTH:
+            raise ValidationException(f"密码长度不能超过{PASSWORD_MAX_LENGTH}位")
 
     @classmethod
     def from_raw(cls, raw: str) -> Password:

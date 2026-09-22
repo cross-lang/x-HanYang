@@ -13,7 +13,17 @@ from src.domain.shared.domain_exception import EntityNotFoundException, Conflict
 
 @dataclass(frozen=True)
 class UpdateUserCommand:
-    """更新用户命令（仅传入需要更新的字段）。"""
+    """更新用户命令（仅传入需要更新的字段）。
+
+    Attributes:
+        user_id: 用户 ID
+        email: 新邮箱
+        name: 姓名
+        phone: 手机号
+        avatar_url: 头像 URL
+        role_id: 角色 ID
+        password: 新密码
+    """
 
     user_id: int
     email: str | None = None
@@ -31,7 +41,7 @@ class UpdateUserHandler:
         self._user_repo = user_repository
         self._event_bus = event_bus
 
-    def handle(self, command: UpdateUserCommand) -> User:
+    async def handle(self, command: UpdateUserCommand) -> User:
         """执行更新用户命令。
 
         Args:
@@ -45,14 +55,14 @@ class UpdateUserHandler:
             ConflictException: 邮箱已被其他用户占用
         """
         # 1. 查找用户
-        user = self._user_repo.find_by_id(command.user_id)
+        user = await self._user_repo.find_by_id(command.user_id)
         if user is None:
             raise EntityNotFoundException(f"用户 {command.user_id} 不存在")
 
         # 2. 更新邮箱（通过聚合根方法，内含业务规则）
         if command.email is not None:
             new_email = Email(command.email)
-            existing = self._user_repo.find_by_email(command.email)
+            existing = await self._user_repo.find_by_email(command.email)
             if existing is not None and existing.id != command.user_id:
                 raise ConflictException(f"邮箱 {command.email} 已被其他用户占用")
             user.change_email(new_email)
@@ -73,10 +83,10 @@ class UpdateUserHandler:
             user.role_id = command.role_id
 
         # 5. 持久化
-        self._user_repo.save(user)
+        await self._user_repo.save(user)
 
         # 6. 分发领域事件
         events = user.collect_and_clear_events()
-        self._event_bus.publish_all(events)
+        await self._event_bus.publish_all(events)
 
         return user

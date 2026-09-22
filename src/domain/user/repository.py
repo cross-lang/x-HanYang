@@ -16,10 +16,11 @@ class UserRepository(Repository[User]):
     """用户仓储接口。
 
     继承 Repository[User] 提供的基础 CRUD，扩展用户特有的查询。
+    所有方法均为异步。
     """
 
     @abstractmethod
-    def find_by_email(self, email: str) -> User | None:
+    async def find_by_email(self, email: str) -> User | None:
         """根据邮箱查找用户。
 
         Args:
@@ -30,7 +31,7 @@ class UserRepository(Repository[User]):
         """
 
     @abstractmethod
-    def find_by_username(self, username: str) -> User | None:
+    async def find_by_username(self, username: str) -> User | None:
         """根据用户名查找用户。
 
         Args:
@@ -41,7 +42,7 @@ class UserRepository(Repository[User]):
         """
 
     @abstractmethod
-    def search(
+    async def search(
         self,
         keyword: str | None = None,
         status: str | None = None,

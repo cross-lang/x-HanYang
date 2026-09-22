@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
-from sqlalchemy import select
-from sqlalchemy.orm import Session
+import json
+
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.domain.audit.audit_log import AuditLog
 from src.domain.audit.repository import AuditLogRepository
@@ -11,23 +13,23 @@ from src.infrastructure.persistence.orm.audit_mapping import AuditLogTable
 
 
 class SqlAuditLogRepository(AuditLogRepository):
-    """SQLAlchemy 审计日志仓储实现。"""
+    """SQLAlchemy 审计日志仓储实现（异步）。"""
 
-    def __init__(self, session: Session) -> None:
+    def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
-    def find_by_id(self, id: int) -> AuditLog | None:
-        row = self._session.get(AuditLogTable, id)
+    async def find_by_id(self, id: int) -> AuditLog | None:
+        """根据 ID 查找审计日志。"""
+        row = await self._session.get(AuditLogTable, id)
         return self._to_domain(row) if row else None
 
-    def find_by_entity(
+    async def find_by_entity(
         self, entity_type: str, entity_id: int, skip: int = 0, limit: int = 50
     ) -> tuple[list[AuditLog], int]:
-        from sqlalchemy import func
-
+        """按实体查找审计日志（分页）。"""
         conditions = [AuditLogTable.entity_type == entity_type, AuditLogTable.entity_id == entity_id]
         count_stmt = select(func.count()).select_from(select(AuditLogTable).where(*conditions).subquery())
-        total = self._session.execute(count_stmt).scalar() or 0
+        total = (await self._session.execute(count_stmt)).scalar() or 0
 
         stmt = (
             select(AuditLogTable)
@@ -36,27 +38,28 @@ class SqlAuditLogRepository(AuditLogRepository):
             .offset(skip)
             .limit(limit)
         )
-        rows = list(self._session.execute(stmt).scalars().all())
+        rows = list((await self._session.execute(stmt)).scalars().all())
         return [self._to_domain(r) for r in rows], total
 
-    def save(self, aggregate: AuditLog) -> None:
+    async def save(self, aggregate: AuditLog) -> None:
+        """保存审计日志（追加）。"""
         orm = self._to_orm(aggregate)
         self._session.add(orm)
-        self._session.flush()
+        await self._session.flush()
         aggregate.id = orm.id
 
-    def delete(self, id: int) -> bool:
-        row = self._session.get(AuditLogTable, id)
+    async def delete(self, id: int) -> bool:
+        """物理删除审计日志。"""
+        row = await self._session.get(AuditLogTable, id)
         if row is None:
             return False
-        self._session.delete(row)
-        self._session.flush()
+        await self._session.delete(row)
+        await self._session.flush()
         return True
 
     @staticmethod
     def _to_domain(row: AuditLogTable) -> AuditLog:
-        import json
-
+        """ORM → 领域模型。"""
         return AuditLog(
             id=row.id,
             entity_type=row.entity_type,
@@ -73,8 +76,7 @@ class SqlAuditLogRepository(AuditLogRepository):
 
     @staticmethod
     def _to_orm(log: AuditLog) -> AuditLogTable:
-        import json
-
+        """领域模型 → ORM。"""
         return AuditLogTable(
             entity_type=log.entity_type,
             entity_id=log.entity_id,

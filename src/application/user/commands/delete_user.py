@@ -12,7 +12,11 @@ from src.domain.shared.domain_exception import EntityNotFoundException
 
 @dataclass(frozen=True)
 class DeleteUserCommand:
-    """删除用户命令。"""
+    """删除用户命令。
+
+    Attributes:
+        user_id: 用户 ID
+    """
 
     user_id: int
 
@@ -24,7 +28,7 @@ class DeleteUserHandler:
         self._user_repo = user_repository
         self._event_bus = event_bus
 
-    def handle(self, command: DeleteUserCommand) -> bool:
+    async def handle(self, command: DeleteUserCommand) -> bool:
         """执行删除用户命令（软删除）。
 
         Args:
@@ -36,15 +40,15 @@ class DeleteUserHandler:
         Raises:
             EntityNotFoundException: 用户不存在
         """
-        user = self._user_repo.find_by_id(command.user_id)
+        user = await self._user_repo.find_by_id(command.user_id)
         if user is None:
             raise EntityNotFoundException(f"用户 {command.user_id} 不存在")
 
         username = user.username
         user.soft_delete()
-        self._user_repo.save(user)
+        await self._user_repo.save(user)
 
         # 发布删除事件
-        self._event_bus.publish(UserDeleted(user_id=command.user_id, username=username))
+        await self._event_bus.publish(UserDeleted(user_id=command.user_id, username=username))
 
         return True

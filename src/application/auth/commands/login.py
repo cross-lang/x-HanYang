@@ -10,7 +10,13 @@ from src.domain.auth.auth_service import AuthDomainService
 
 @dataclass(frozen=True)
 class LoginCommand:
-    """登录命令。"""
+    """登录命令。
+
+    Attributes:
+        account: 用户名或邮箱
+        password: 明文密码
+        ip_address: 客户端 IP
+    """
 
     account: str
     password: str
@@ -26,7 +32,7 @@ class LoginHandler:
     def __init__(self, auth_domain_service: AuthDomainService) -> None:
         self._auth_service = auth_domain_service
 
-    def handle(self, command: LoginCommand) -> TokenPairDTO:
+    async def handle(self, command: LoginCommand) -> TokenPairDTO:
         """执行登录。
 
         Args:
@@ -35,7 +41,7 @@ class LoginHandler:
         Returns:
             TokenPairDTO: 令牌对
         """
-        token_pair = self._auth_service.authenticate(
+        token_pair = await self._auth_service.authenticate(
             account=command.account,
             password=command.password,
             ip_address=command.ip_address,

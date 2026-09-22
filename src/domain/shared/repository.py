@@ -18,15 +18,16 @@ class Repository(ABC, Generic[T]):
     """仓储接口基类。
 
     子类必须指定聚合根类型 T，并实现所有抽象方法。
+    接口方法均为异步，以适配异步数据库驱动。
 
     Example:
         class UserRepository(Repository[User]):
-            def find_by_id(self, id: int) -> User | None: ...
-            def save(self, user: User) -> None: ...
+            async def find_by_id(self, id: int) -> User | None: ...
+            async def save(self, user: User) -> None: ...
     """
 
     @abstractmethod
-    def find_by_id(self, id: int) -> T | None:
+    async def find_by_id(self, id: int) -> T | None:
         """根据 ID 查找聚合根。
 
         Args:
@@ -37,7 +38,7 @@ class Repository(ABC, Generic[T]):
         """
 
     @abstractmethod
-    def save(self, aggregate: T) -> None:
+    async def save(self, aggregate: T) -> None:
         """保存聚合根（新增或更新）。
 
         Args:
@@ -45,7 +46,7 @@ class Repository(ABC, Generic[T]):
         """
 
     @abstractmethod
-    def delete(self, id: int) -> bool:
+    async def delete(self, id: int) -> bool:
         """删除聚合根。
 
         Args:

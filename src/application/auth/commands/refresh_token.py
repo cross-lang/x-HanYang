@@ -10,7 +10,11 @@ from src.domain.auth.auth_service import AuthDomainService
 
 @dataclass(frozen=True)
 class RefreshTokenCommand:
-    """刷新令牌命令。"""
+    """刷新令牌命令。
+
+    Attributes:
+        refresh_token: 刷新令牌
+    """
 
     refresh_token: str
 
@@ -21,7 +25,7 @@ class RefreshTokenHandler:
     def __init__(self, auth_domain_service: AuthDomainService) -> None:
         self._auth_service = auth_domain_service
 
-    def handle(self, command: RefreshTokenCommand) -> TokenPairDTO:
+    async def handle(self, command: RefreshTokenCommand) -> TokenPairDTO:
         """执行令牌刷新。
 
         Args:
@@ -30,7 +34,7 @@ class RefreshTokenHandler:
         Returns:
             TokenPairDTO: 新的令牌对
         """
-        token_pair = self._auth_service.refresh_tokens(command.refresh_token)
+        token_pair = await self._auth_service.refresh_tokens(command.refresh_token)
         return TokenPairDTO(
             access_token=token_pair.access_token,
             refresh_token=token_pair.refresh_token,

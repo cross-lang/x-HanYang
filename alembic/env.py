@@ -21,13 +21,13 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# 用应用配置覆盖默认 URL
+# 用应用配置覆盖默认 URL，将异步驱动转换为同步驱动（Alembic 迁移使用同步引擎）
 settings = get_settings()
 if settings.database_url:
     url = settings.database_url
-    # SQLAlchemy URL 兼容处理
-    if url.startswith("mysql://"):
-        url = url.replace("mysql://", "mysql+pymysql://", 1)
+    url = url.replace("mysql+asyncmy://", "mysql+pymysql://")
+    url = url.replace("mysql+aiomysql://", "mysql+pymysql://")
+    url = url.replace("sqlite+aiosqlite://", "sqlite://")
     config.set_main_option("sqlalchemy.url", url)
 
 target_metadata = Base.metadata

@@ -7,32 +7,36 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any
+from types import TracebackType
 
 
 class UnitOfWork(ABC):
     """工作单元接口。
 
-    使用方式（with 语句）：
-        with unit_of_work as uow:
-            user_repo.save(user)
-            audit_repo.save(audit_log)
-            uow.commit()  # 显式提交
-    # 退出 with 时自动 rollback（未 commit 的情况）
+    使用方式（async with 语句）：
+        async with unit_of_work as uow:
+            await uow.user_repo.save(user)
+            await uow.commit()  # 显式提交
+    # 退出 async with 时自动 rollback（未 commit 的情况）
     """
 
     @abstractmethod
-    def __enter__(self) -> UnitOfWork:
+    async def __aenter__(self) -> UnitOfWork:
         """进入工作单元上下文。"""
 
     @abstractmethod
-    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
         """退出工作单元上下文（未提交时自动回滚）。"""
 
     @abstractmethod
-    def commit(self) -> None:
+    async def commit(self) -> None:
         """提交事务。"""
 
     @abstractmethod
-    def rollback(self) -> None:
+    async def rollback(self) -> None:
         """回滚事务。"""

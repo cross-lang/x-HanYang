@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-应用入口模块
+"""应用入口模块。
 
 本模块是 FastAPI 应用的核心入口，提供应用工厂函数和启动命令。
 负责编排所有组件的初始化顺序：配置加载 → 中间件注册 →
@@ -21,12 +20,16 @@ Usage:
     uv run x-HanYang --reload
 """
 
+from __future__ import annotations
+
 from contextlib import asynccontextmanager
 
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from src.constants.app import APP_NAME, APP_VERSION, APP_DESCRIPTION
+from src.constants.http import DOCS_URL, REDOC_URL
 from src.interfaces.http.router import api_router
 from src.interfaces.http.middleware import (
     ExceptionHandlingMiddleware,
@@ -37,15 +40,11 @@ from src.interfaces.http.exception_handlers import register_exception_handlers
 from src.infrastructure.config.settings import get_settings
 from src.shared.logger import logger
 
-APP_NAME = "汉阳（HanYang）"
-APP_VERSION = "0.1.0"
-APP_DESCRIPTION = "一个基于 DDD 架构的 FastAPI 生产级 Python Web 项目"
-
-_has_db = False
-_has_redis = False
+_has_db: bool = False
+_has_redis: bool = False
 
 
-def _check_infrastructure():
+def _check_infrastructure() -> None:
     """检查基础设施可用性。"""
     global _has_db, _has_redis
     settings = get_settings()
@@ -60,6 +59,9 @@ async def lifespan(app: FastAPI):
     """应用生命周期管理。
 
     启动时初始化数据库和缓存连接，关闭时释放资源。
+
+    Args:
+        app: FastAPI 应用实例
     """
     _check_infrastructure()
     settings = get_settings()
@@ -70,30 +72,20 @@ async def lifespan(app: FastAPI):
 
     if _has_db:
         try:
-            from src.infrastructure.persistence.database import get_database_provider
-
-            db = get_database_provider()
-            from src.infrastructure.persistence.database import Base
+            from src.infrastructure.persistence.database import get_database_provider, Base
 
             # 导入 ORM 映射以注册表
             import src.infrastructure.persistence.orm.user_mapping  # noqa: F401
             import src.infrastructure.persistence.orm.audit_mapping  # noqa: F401
 
-            Base.metadata.create_all(bind=db.engine)
+            db = get_database_provider()
+            async with db.engine.begin() as conn:
+                await conn.run_sync(Base.metadata.create_all)
             logger.info("Database initialized successfully")
         except Exception as e:
             logger.warning(f"Database initialization skipped: {e}")
     else:
         logger.info("Database URL not configured, database features disabled")
-
-    if _has_redis:
-        try:
-            from src.infrastructure.external.cache_provider import get_cache_provider
-
-            get_cache_provider()
-            logger.info("Redis cache initialized")
-        except Exception as e:
-            logger.warning(f"Redis initialization skipped: {e}")
 
     yield
 
@@ -103,7 +95,7 @@ async def lifespan(app: FastAPI):
         try:
             from src.infrastructure.persistence.database import get_database_provider
 
-            get_database_provider().close()
+            await get_database_provider().close()
             logger.info("Database connection closed")
         except Exception as e:
             logger.warning(f"Error closing database: {e}")
@@ -112,7 +104,7 @@ async def lifespan(app: FastAPI):
         try:
             from src.infrastructure.external.cache_provider import get_cache_provider
 
-            get_cache_provider().close()
+            await get_cache_provider().close()
             logger.info("Redis connection closed")
         except Exception as e:
             logger.warning(f"Error closing Redis: {e}")
@@ -125,6 +117,9 @@ def create_app() -> FastAPI:
         1. 注册中间件（异常兜底 → 请求日志 → 请求 ID → CORS）
         2. 注册领域异常 → HTTP 状态码映射
         3. 挂载 API 路由
+
+    Returns:
+        FastAPI: 应用实例
     """
     settings = get_settings()
 
@@ -133,8 +128,8 @@ def create_app() -> FastAPI:
         version=APP_VERSION,
         description=APP_DESCRIPTION,
         lifespan=lifespan,
-        docs_url="/docs",
-        redoc_url="/redoc",
+        docs_url=DOCS_URL,
+        redoc_url=REDOC_URL,
     )
 
     # 中间件顺序：后注册的在外层
@@ -178,8 +173,8 @@ def main() -> None:
     settings = get_settings()
 
     parser = argparse.ArgumentParser(
-        prog="汉阳（HanYang）",
-        description="一个基于 DDD 架构的 FastAPI 生产级 Web 应用框架",
+        prog=APP_NAME,
+        description=APP_DESCRIPTION,
     )
     parser.add_argument("-V", "--version", action="version", version=f"x-HanYang {APP_VERSION}")
     parser.add_argument("--host", default=settings.server_host, help=f"监听地址（默认 {settings.server_host}）")

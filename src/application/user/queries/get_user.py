@@ -11,7 +11,11 @@ from src.domain.shared.domain_exception import EntityNotFoundException
 
 @dataclass(frozen=True)
 class GetUserQuery:
-    """获取用户详情查询。"""
+    """获取用户详情查询。
+
+    Attributes:
+        user_id: 用户 ID
+    """
 
     user_id: int
 
@@ -22,7 +26,7 @@ class GetUserHandler:
     def __init__(self, user_repository: UserRepository) -> None:
         self._user_repo = user_repository
 
-    def handle(self, query: GetUserQuery) -> UserDTO:
+    async def handle(self, query: GetUserQuery) -> UserDTO:
         """执行查询。
 
         Args:
@@ -34,7 +38,7 @@ class GetUserHandler:
         Raises:
             EntityNotFoundException: 用户不存在
         """
-        user = self._user_repo.find_by_id(query.user_id)
+        user = await self._user_repo.find_by_id(query.user_id)
         if user is None:
             raise EntityNotFoundException(f"用户 {query.user_id} 不存在")
         return UserDTO.from_domain(user)
