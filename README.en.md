@@ -1,4 +1,4 @@
-# HanJiang
+# HanYang
 
 [中文](README.md) | English
 
@@ -6,7 +6,7 @@
 
 ## Introduction
 
-HanJiang (汉江) is a production-grade Python Web application framework built on top of FastAPI, following industry best engineering practices. It provides a standardized, modular, highly extensible, and maintainable backend service infrastructure.
+HanYang (汉阳) is a production-grade Python Web application framework built on top of FastAPI, following industry best engineering practices. It provides a standardized, modular, highly extensible, and maintainable backend service infrastructure.
 
 The project is ready to use out of the box, featuring a standard three-layer architecture (API → Service → Repository), FastAPI native dependency injection, dual configuration system, unified authentication with RBAC access control, structured logging, business audit, S3-compatible object storage, and idempotent seed data initialization. It enables rapid development of enterprise-grade RESTful APIs suitable for local development, testing, and multi-environment production deployment.
 
@@ -39,8 +39,8 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 ### 2. Clone the Repository
 
 ```bash
-git clone https://github.com/cross-lang/x-HanJiang.git
-cd x-HanJiang
+git clone https://github.com/cross-lang/x-HanYang.git
+cd x-HanYang
 ```
 
 ### 3. Install Dependencies
@@ -79,7 +79,7 @@ cp config.yaml.example config.yaml
 | `MYSQL_PORT` | `database.port` | MySQL port, default `3306` |
 | `MYSQL_USER` | `database.user` | MySQL username |
 | `MYSQL_PASSWORD` | `database.password` | MySQL password |
-| `MYSQL_DATABASE` | `database.database` | MySQL database name, default `hanjiang` |
+| `MYSQL_DATABASE` | `database.database` | MySQL database name, default `hanyang` |
 | `REDIS_HOST` | `redis.host` | Redis host address |
 | `REDIS_PORT` | `redis.port` | Redis port, default `6379` |
 | `REDIS_PASSWORD` | `redis.password` | Redis password |
@@ -98,7 +98,7 @@ cp config.yaml.example config.yaml
 
 ```bash
 # Start with CLI command (hot reload)
-uv run x-HanJiang --reload
+uv run x-HanYang --reload
 
 # Or start with uvicorn directly
 uv run uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
@@ -170,14 +170,14 @@ curl http://localhost:8000/api/v1/roles/1/permissions \
 ## Project Structure
 
 ```
-x-HanJiang/
+x-HanYang/
 ├── .env.example              # Environment variable template
 ├── config.yaml.example       # YAML configuration file template
 ├── alembic/                  # Database migration management
 │   ├── env.py                # Alembic environment configuration
 │   └── versions/             # Migration version scripts
 ├── docs/                     # Project documentation
-│   └── hanjiang.sql          # Database schema definition (6 tables)
+│   └── hanyang.sql          # Database schema definition (6 tables)
 ├── examples/                 # Usage examples
 ├── logs/                     # Runtime log output directory
 ├── scripts/                  # Engineering scripts
@@ -464,7 +464,7 @@ storage:
     endpoint_url: "https://s3.cn-south-1.qiniucs.com"
     access_key: "<your-access-key>"
     secret_key: "<your-secret-key>"
-    bucket: "x-hanjiang"
+    bucket: "x-hanyang"
     region: "cn-south-1"
     prefix: "uploads"
     public_url: ""
@@ -477,7 +477,7 @@ storage:
 | `s3.endpoint_url` | S3-compatible service endpoint | — |
 | `s3.access_key` | Access key | — |
 | `s3.secret_key` | Secret key | — |
-| `s3.bucket` | Bucket name | `x-hanjiang` |
+| `s3.bucket` | Bucket name | `x-hanyang` |
 | `s3.region` | Storage region | `cn-south-1` |
 | `s3.prefix` | Object key prefix | `uploads` |
 | `s3.public_url` | Public access domain (optional, with protocol) | — |
@@ -514,4 +514,4 @@ This project is open-sourced under the [MIT License](LICENSE).
 - **Email**: [john.young@foxmail.com](mailto:john.young@foxmail.com)
 - **Gitee**: https://gitee.com/yeyushilai
 - **GitHub**: https://github.com/yeyushilai
-- **Project**: https://github.com/cross-lang/x-HanJiang
+- **Project**: https://github.com/cross-lang/x-HanYang
