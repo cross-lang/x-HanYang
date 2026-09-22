@@ -15,8 +15,10 @@
 - 严格遵循 DDD 四层架构：领域层（Domain）→ 应用层（Application）→ 基础设施层（Infrastructure）→ 接口层（API）
 - 全异步架构：基于 SQLAlchemy 2.0 异步引擎 + asyncio，适配高并发场景
 - CQRS 命令/查询分离：写操作与读操作独立编排，职责清晰
-- 领域事件驱动：聚合根收集领域事件，事件总线统一分发
-- 工作单元（Unit of Work）：事务边界自动管理，确保数据一致性
+- 领域事件驱动：聚合根收集领域事件，UoW 提交后由事件总线统一分发
+- 工作单元（Unit of Work）：CommandHandler 通过 `async with uow` 管理事务边界，确保数据一致性
+- 领域端口（Domain Port）：StorageProvider、PasswordHasher 等抽象定义在领域层，基础设施层实现，严格遵循依赖倒置原则
+- RESTful 规范：更新使用 `PUT`、删除使用 `DELETE`，资源路径语义清晰
 - 生产级安全：JWT 认证、速率限制、敏感数据脱敏、生产配置校验
 
 ## 快速开始
@@ -182,12 +184,14 @@ x-HanYang/
 │   │   ├── auth/                     #   认证用例（登录/登出/刷新令牌）
 │   │   ├── file/                     #   文件用例（上传/下载）
 │   │   ├── role/                     #   角色用例（CRUD）
-│   │   ├── shared/                   #   应用层共享（EventBus 抽象、UnitOfWork 抽象）
+│   │   ├── shared/                   #   应用层共享（EventBus 抽象、UnitOfWork 抽象、PaginatedResult 分页 DTO）
 │   │   └── user/                     #   用户用例（CRUD + 搜索）
 │   ├── constants/                    # 全局常量（应用元信息、认证、HTTP、分页、消息）
 │   ├── domain/                       # 领域层 — 零外部依赖，纯业务逻辑
 │   │   ├── audit/                    #   审计聚合（AuditLog、LoginLog）
 │   │   ├── auth/                     #   认证聚合（AuthDomainService 接口、领域事件）
+│   │   ├── file/                     #   文件聚合端口（StorageProvider 领域接口）
+│   │   ├── password_hasher.py        #   密码哈希端口（PasswordHasher 领域接口）
 │   │   ├── shared/                   #   领域共享内核（Entity、ValueObject、AggregateRoot、DomainEvent、Repository 抽象）
 │   │   └── user/                     #   用户聚合（User 聚合根、Role、Permission、Email/Password 值对象）
 │   ├── infrastructure/               # 基础设施层 — 技术实现
@@ -351,13 +355,13 @@ sequenceDiagram
 | 用户 | `POST` | `/api/v1/users` | 创建用户 | Bearer Token |
 | 用户 | `GET` | `/api/v1/users` | 用户列表（分页） | Bearer Token |
 | 用户 | `GET` | `/api/v1/users/{id}` | 查询用户详情 | Bearer Token |
-| 用户 | `POST` | `/api/v1/users/{id}/update` | 更新用户 | Bearer Token |
-| 用户 | `POST` | `/api/v1/users/{id}/delete` | 删除用户（软删除） | Bearer Token |
+| 用户 | `PUT` | `/api/v1/users/{id}` | 更新用户 | Bearer Token |
+| 用户 | `DELETE` | `/api/v1/users/{id}` | 删除用户（软删除） | Bearer Token |
 | 角色 | `POST` | `/api/v1/roles` | 创建角色 | Bearer Token |
 | 角色 | `GET` | `/api/v1/roles` | 角色列表（分页） | Bearer Token |
 | 角色 | `GET` | `/api/v1/roles/{id}` | 查询角色详情 | Bearer Token |
-| 角色 | `POST` | `/api/v1/roles/{id}/update` | 更新角色 | Bearer Token |
-| 角色 | `POST` | `/api/v1/roles/{id}/delete` | 删除角色（软删除） | Bearer Token |
+| 角色 | `PUT` | `/api/v1/roles/{id}` | 更新角色 | Bearer Token |
+| 角色 | `DELETE` | `/api/v1/roles/{id}` | 删除角色（软删除） | Bearer Token |
 | 文件 | `POST` | `/api/v1/files/upload` | 上传文件 | Bearer Token |
 | 文件 | `GET` | `/api/v1/files/{key}` | 下载文件 | Bearer Token |
 | 审计 | `GET` | `/api/v1/audit/login-logs` | 登录日志查询（分页） | Bearer Token |

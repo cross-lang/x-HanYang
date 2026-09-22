@@ -6,8 +6,6 @@
 
 from __future__ import annotations
 
-import logging
-
 import jwt
 
 from src.constants.auth import (
@@ -35,9 +33,8 @@ from src.domain.auth.auth_service import AuthDomainService, CurrentUser, TokenPa
 from src.domain.shared.domain_exception import AuthenticationException
 from src.domain.user.repository import UserRepository
 from src.shared.security import create_access_token, create_refresh_token, decode_token
+from src.shared.logger import logger
 from src.application.shared.unit_of_work import UnitOfWork
-
-logger = logging.getLogger(__name__)
 
 
 class InfraAuthDomainService(AuthDomainService):
@@ -220,7 +217,7 @@ class InfraAuthDomainService(AuthDomainService):
         if user.role_id is not None and self._uow.role_repo is not None:
             role = await self._uow.role_repo.find_by_id(user.role_id)
             if role is not None:
-                role_code = role.code
+                role_code = role.role_code
 
         return CurrentUser(
             id=user.id,

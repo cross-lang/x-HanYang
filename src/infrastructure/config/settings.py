@@ -6,7 +6,6 @@
 
 from __future__ import annotations
 
-import logging
 from functools import lru_cache
 
 from pydantic import Field, model_validator
@@ -18,7 +17,7 @@ _WEAK_SECRET_KEYS: frozenset[str] = frozenset({
     "secret", "default", "password", "123456",
 })
 
-logger = logging.getLogger(__name__)
+from src.shared.logger import logger
 
 
 class AppSettings(BaseSettings):

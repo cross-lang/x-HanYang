@@ -38,6 +38,7 @@ from src.infrastructure.config.settings import get_settings
 from src.infrastructure.persistence.database import get_session
 from src.infrastructure.persistence.unit_of_work import SqlUnitOfWork
 from src.infrastructure.messaging.event_dispatcher import InMemoryEventBus
+from src.shared.logger import logger
 
 _bearer_scheme = HTTPBearer(auto_error=False)
 
@@ -290,7 +291,8 @@ async def get_current_user_dep(
 
     try:
         current_user = await auth_service.get_current_user(credentials.credentials)
-    except Exception:
+    except Exception as e:
+        logger.debug("令牌验证失败: {}", e)
         raise HTTPException(status_code=401, detail=MSG_INVALID_OR_EXPIRED_TOKEN)
 
     return CurrentUserDTO(

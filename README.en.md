@@ -393,8 +393,8 @@ All business endpoints are prefixed with `/api/v1`.
 | GET | `/api/v1/users` | User list (pagination/keyword/status filter) |
 | GET | `/api/v1/users/{id}` | User detail |
 | GET | `/api/v1/users/export` | Export users (CSV) |
-| POST | `/api/v1/users/{id}/update` | Update user |
-| POST | `/api/v1/users/{id}/delete` | Delete user (soft delete) |
+| PUT | `/api/v1/users/{id}` | Update user |
+| DELETE | `/api/v1/users/{id}` | Delete user (soft delete) |
 
 **Role Management (Requires Authentication):**
 
@@ -403,8 +403,8 @@ All business endpoints are prefixed with `/api/v1`.
 | POST | `/api/v1/roles` | Create role |
 | GET | `/api/v1/roles` | Role list (pagination/keyword/type/status filter) |
 | GET | `/api/v1/roles/{id}` | Role detail |
-| POST | `/api/v1/roles/{id}/update` | Update role |
-| POST | `/api/v1/roles/{id}/delete` | Delete role (soft delete) |
+| PUT | `/api/v1/roles/{id}` | Update role |
+| DELETE | `/api/v1/roles/{id}` | Delete role (soft delete) |
 | GET | `/api/v1/roles/{id}/permissions` | Role permission list (with permission details) |
 
 **Business Audit Logs (Requires Authentication):**
