@@ -2,13 +2,16 @@
 
 将领域模型 User/UserEntity 映射到数据库表。
 使用 SQLAlchemy 的 Table / Mapped 方式。
+
+注意：主键使用 Integer 而非 BigInteger，以兼容 SQLite 自动递增。
+MySQL 中 Integer 映射为 INT（最大约 21 亿），满足绝大多数场景。
 """
 
 from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import BigInteger, DateTime, Index, Integer, String, func, text
+from sqlalchemy import BigInteger, DateTime, Index, Integer, String, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from src.infrastructure.persistence.database import Base
@@ -19,7 +22,7 @@ class UserTable(Base):
 
     __tablename__ = "users"
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True, comment="主键ID")
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True, comment="主键ID")
     username: Mapped[str] = mapped_column(String(50), nullable=False, comment="用户名")
     email: Mapped[str] = mapped_column(String(100), nullable=False, comment="邮箱")
     name: Mapped[str | None] = mapped_column(String(100), nullable=True, comment="姓名")
@@ -50,7 +53,7 @@ class RoleTable(Base):
 
     __tablename__ = "roles"
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True, comment="主键ID")
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True, comment="主键ID")
     role_name: Mapped[str] = mapped_column(String(50), nullable=False, comment="角色名称")
     role_code: Mapped[str] = mapped_column(String(50), nullable=False, comment="角色编码")
     description: Mapped[str | None] = mapped_column(String(255), nullable=True, comment="角色描述")
@@ -70,7 +73,7 @@ class PermissionTable(Base):
 
     __tablename__ = "permissions"
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True, comment="主键ID")
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True, comment="主键ID")
     perm_code: Mapped[str] = mapped_column(String(100), nullable=False, comment="权限编码")
     perm_name: Mapped[str] = mapped_column(String(100), nullable=False, comment="权限名称")
     module: Mapped[str] = mapped_column(String(50), nullable=False, comment="所属模块")
@@ -89,11 +92,11 @@ class RolePermissionTable(Base):
 
     __tablename__ = "role_permissions"
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True, comment="主键ID")
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True, comment="主键ID")
     role_id: Mapped[int] = mapped_column(BigInteger, nullable=False, comment="角色ID")
     permission_id: Mapped[int] = mapped_column(BigInteger, nullable=False, comment="权限ID")
 
     __table_args__ = (
-        Index("idx_role_id", "role_id"),
-        Index("idx_permission_id", "permission_id"),
+        Index("idx_rp_role_id", "role_id"),
+        Index("idx_rp_permission_id", "permission_id"),
     )

@@ -37,9 +37,9 @@ from src.interfaces.http.exception_handlers import register_exception_handlers
 from src.infrastructure.config.settings import get_settings
 from src.shared.logger import logger
 
-APP_NAME = "x-HanYang"
+APP_NAME = "汉阳（HanYang）"
 APP_VERSION = "0.1.0"
-APP_DESCRIPTION = "基于 DDD 架构的 FastAPI 生产级 Python Web 项目"
+APP_DESCRIPTION = "一个基于 DDD 架构的 FastAPI 生产级 Python Web 项目"
 
 _has_db = False
 _has_redis = False

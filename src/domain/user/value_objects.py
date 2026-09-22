@@ -61,6 +61,9 @@ class Password(ValueObject):
     _hashed: str = ""
 
     def __post_init__(self) -> None:
+        # 从哈希构造时（_raw 为空）跳过长度校验
+        if not self._raw:
+            return
         if len(self._raw) < 8:
             raise ValidationException("密码长度不能少于8位")
         if len(self._raw) > 128:

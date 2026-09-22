@@ -1816,7 +1816,7 @@ wheels = [
 ]
 
 [[package]]
-name = "x-hanjiang"
+name = "x-hanyang"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
