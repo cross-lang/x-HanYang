@@ -4,9 +4,11 @@
 
 ## 项目简介
 
-**汉阳（HanYang）** 是一个基于`领域驱动设计（DDD）`思想，使用 `FastAPI` 实现的生产级 Python Web 应用框架。
+**汉阳（HanYang）** 是一个基于`领域驱动设计（DDD）`思想，使用 `FastAPI` 实现的生产级 Python Web 应用框架。项目以 DDD 分层架构为核心设计思想，严格遵循领域驱动设计原则，提供完整的用户认证、RBAC 权限管理、审计日志、文件管理等企业级功能模块。
 
-项目以 DDD 分层架构为核心设计思想，严格遵循领域驱动设计原则，提供完整的用户认证、RBAC 权限管理、审计日志、文件管理等企业级功能模块。适用于需要高内聚、低耦合、可扩展的中后台系统、API 网关、微服务基座等业务场景。
+**适用场景：**
+
+适用于需要高内聚、低耦合、可扩展的中后台系统、API 网关、微服务基座等业务场景。
 
 **核心特征：**
 
@@ -39,7 +41,7 @@
 
 ```bash
 # 克隆仓库
-git clone https://github.com/yeyushilai/x-HanYang.git
+git clone https://github.com/cross-lang/x-HanYang.git
 
 # 进入项目目录
 cd x-HanYang
@@ -89,7 +91,13 @@ uv run x-HanYang --reload
 uv run x-HanYang --reload --port 9000
 ```
 
-**方式二：Docker 容器部署**
+**方式二：直接使用 uvicorn**
+
+```bash
+uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
+```
+
+**方式三：Docker 容器部署**
 
 ```bash
 # 创建 .env 文件并配置生产环境变量
@@ -103,12 +111,6 @@ docker-compose logs -f app
 
 # 停止服务
 docker-compose down
-```
-
-**方式三：直接使用 uvicorn**
-
-```bash
-uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
 ### 6. 常用工程命令
@@ -444,4 +446,4 @@ uv pip install boto3
 - **邮箱**：john.young@foxmail.com
 - **Gitee**：https://gitee.com/yeyushilai
 - **GitHub**：https://github.com/yeyushilai
-- **项目地址**：https://github.com/yeyushilai/x-HanYang
+- **项目地址**：https://github.com/cross-lang/x-HanYang
