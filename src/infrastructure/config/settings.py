@@ -27,7 +27,6 @@ class AppSettings(BaseSettings):
     Attributes:
         app_env: 运行环境（development/production）
         app_debug: 是否启用调试模式
-        app_secret_key: 应用密钥
         server_host: 监听地址
         server_port: 监听端口
         server_workers: 工作进程数
@@ -54,7 +53,6 @@ class AppSettings(BaseSettings):
     # ── 应用 ─────────────────────────────────────
     app_env: str = "development"
     app_debug: bool = False
-    app_secret_key: str = "change-me"
 
     # ── 服务器 ───────────────────────────────────
     server_host: str = "0.0.0.0"
