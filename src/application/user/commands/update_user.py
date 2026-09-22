@@ -5,25 +5,15 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from src.application.shared.event_bus import EventBus
+from src.application.shared.unit_of_work import UnitOfWork
 from src.domain.user.user import User
 from src.domain.user.value_objects import Email, Password
-from src.domain.user.repository import UserRepository
 from src.domain.shared.domain_exception import EntityNotFoundException, ConflictException
 
 
 @dataclass(frozen=True)
 class UpdateUserCommand:
-    """更新用户命令（仅传入需要更新的字段）。
-
-    Attributes:
-        user_id: 用户 ID
-        email: 新邮箱
-        name: 姓名
-        phone: 手机号
-        avatar_url: 头像 URL
-        role_id: 角色 ID
-        password: 新密码
-    """
+    """更新用户命令。"""
 
     user_id: int
     email: str | None = None
@@ -37,42 +27,31 @@ class UpdateUserCommand:
 class UpdateUserHandler:
     """更新用户命令处理器。"""
 
-    def __init__(self, user_repository: UserRepository, event_bus: EventBus) -> None:
-        self._user_repo = user_repository
+    def __init__(self, uow: UnitOfWork, event_bus: EventBus) -> None:
+        self._uow = uow
         self._event_bus = event_bus
 
     async def handle(self, command: UpdateUserCommand) -> User:
         """执行更新用户命令。
 
-        Args:
-            command: 更新用户命令
-
-        Returns:
-            User: 更新后的用户聚合根
-
         Raises:
             EntityNotFoundException: 用户不存在
             ConflictException: 邮箱已被其他用户占用
         """
-        # 1. 查找用户
-        user = await self._user_repo.find_by_id(command.user_id)
+        user = await self._uow.user_repo.find_by_id(command.user_id)
         if user is None:
             raise EntityNotFoundException(f"用户 {command.user_id} 不存在")
 
-        # 2. 更新邮箱（通过聚合根方法，内含业务规则）
         if command.email is not None:
             new_email = Email(command.email)
-            existing = await self._user_repo.find_by_email(command.email)
+            existing = await self._uow.user_repo.find_by_email(command.email)
             if existing is not None and existing.id != command.user_id:
                 raise ConflictException(f"邮箱 {command.email} 已被其他用户占用")
             user.change_email(new_email)
 
-        # 3. 更新密码
         if command.password is not None:
-            password = Password.from_raw(command.password)
-            user.change_password(password)
+            user.change_password(Password.from_raw(command.password))
 
-        # 4. 更新其他字段
         if command.name is not None:
             user.name = command.name
         if command.phone is not None:
@@ -82,10 +61,8 @@ class UpdateUserHandler:
         if command.role_id is not None:
             user.role_id = command.role_id
 
-        # 5. 持久化
-        await self._user_repo.save(user)
+        await self._uow.user_repo.save(user)
 
-        # 6. 分发领域事件
         events = user.collect_and_clear_events()
         await self._event_bus.publish_all(events)
 

@@ -46,20 +46,6 @@ from src.infrastructure.config.settings import get_settings
 from src.infrastructure.external.rate_limiter import get_limiter
 from src.shared.logger import logger
 
-_has_db: bool = False
-_has_redis: bool = False
-
-
-def _check_infrastructure() -> None:
-    """检查基础设施可用性。"""
-    global _has_db, _has_redis
-    settings = get_settings()
-    if settings.database_url:
-        _has_db = True
-    if settings.redis_url:
-        _has_redis = True
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """应用生命周期管理。
@@ -69,14 +55,15 @@ async def lifespan(app: FastAPI):
     Args:
         app: FastAPI 应用实例
     """
-    _check_infrastructure()
     settings = get_settings()
+    has_db = bool(settings.database_url)
+    has_redis = bool(settings.redis_url)
 
     logger.info(f"{APP_NAME} v{APP_VERSION} starting up...")
     logger.info(f"Environment: {settings.app_env}")
     logger.info(f"Debug mode: {settings.app_debug}")
 
-    if _has_db:
+    if has_db:
         try:
             from src.infrastructure.persistence.database import get_database_provider, Base
 
@@ -97,7 +84,7 @@ async def lifespan(app: FastAPI):
 
     logger.info(f"{APP_NAME} shutting down...")
 
-    if _has_db:
+    if has_db:
         try:
             from src.infrastructure.persistence.database import get_database_provider
 
@@ -106,7 +93,7 @@ async def lifespan(app: FastAPI):
         except Exception as e:
             logger.warning(f"Error closing database: {e}")
 
-    if _has_redis:
+    if has_redis:
         try:
             from src.infrastructure.external.cache_provider import get_cache_provider
 
@@ -136,6 +123,7 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
         docs_url=DOCS_URL,
         redoc_url=REDOC_URL,
+        openapi_url="/openapi.json" if settings.app_debug else None
     )
 
     # 限流器
@@ -151,24 +139,21 @@ def create_app() -> FastAPI:
             content={"code": 429, "message": "请求过于频繁，请稍后重试", "data": None},
         )
 
+    # 注册领域异常处理器
+    register_exception_handlers(app)
+
     # 中间件顺序：后注册的在外层
     app.add_middleware(ExceptionHandlingMiddleware)
     app.add_middleware(RequestLoggingMiddleware)
     app.add_middleware(SlowAPIMiddleware)
     app.add_middleware(RequestIDMiddleware)
-
-    # CORS（最后注册 → 最外层）
-    cors_origins = settings.cors_origins
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=cors_origins,
-        allow_credentials="*" not in cors_origins,
+        allow_origins=settings.cors_origins,
+        allow_credentials="*" not in settings.cors_origins,
         allow_methods=["*"],
         allow_headers=["*"],
     )
-
-    # 注册领域异常处理器
-    register_exception_handlers(app)
 
     # 挂载路由
     app.include_router(api_router)

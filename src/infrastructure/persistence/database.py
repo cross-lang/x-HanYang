@@ -10,6 +10,7 @@ from collections.abc import AsyncIterator
 from functools import lru_cache
 
 from sqlalchemy.ext.asyncio import (
+    AsyncEngine,
     AsyncSession,
     async_sessionmaker,
     create_async_engine,
@@ -34,7 +35,7 @@ class DatabaseProvider:
         self._session_factory = async_sessionmaker(bind=self._engine, expire_on_commit=False)
 
     @property
-    def engine(self) -> "AsyncEngine":
+    def engine(self) -> AsyncEngine:
         """SQLAlchemy 异步引擎。"""
         return self._engine
 
@@ -49,7 +50,11 @@ class DatabaseProvider:
 
 @lru_cache(maxsize=1)
 def get_database_provider() -> DatabaseProvider:
-    """获取数据库提供者实例（缓存）。"""
+    """获取数据库提供者实例（缓存）。
+
+    Returns:
+        DatabaseProvider: 数据库提供者实例
+    """
     from src.infrastructure.config.settings import get_settings
 
     settings = get_settings()
@@ -59,19 +64,16 @@ def get_database_provider() -> DatabaseProvider:
 async def get_session() -> AsyncIterator[AsyncSession]:
     """获取异步数据库会话（用于 FastAPI 依赖注入）。
 
+    会话不自动提交事务。事务控制权交给 UnitOfWork：
+    - UoW 成功退出时自动 commit
+    - UoW 异常退出时自动 rollback
+
     Yields:
         AsyncSession: 数据库会话
-
-    Raises:
-        Exception: 会话操作异常（已回滚后继续抛出）
     """
     session_factory = get_database_provider().get_session_factory()
     session = session_factory()
     try:
         yield session
-        await session.commit()
-    except Exception:
-        await session.rollback()
-        raise
     finally:
         await session.close()

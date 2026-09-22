@@ -5,22 +5,14 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from src.application.shared.event_bus import EventBus
+from src.application.shared.unit_of_work import UnitOfWork
 from src.domain.user.role import Role, RoleStatus
-from src.domain.user.repository import RoleRepository
 from src.domain.shared.domain_exception import EntityNotFoundException
 
 
 @dataclass(frozen=True)
 class UpdateRoleCommand:
-    """更新角色命令。
-
-    Attributes:
-        role_id: 角色 ID
-        role_name: 角色名称
-        description: 角色描述
-        status: 角色状态
-    """
-
+    """更新角色命令。"""
     role_id: int
     role_name: str | None = None
     description: str | None = None
@@ -30,23 +22,17 @@ class UpdateRoleCommand:
 class UpdateRoleHandler:
     """更新角色命令处理器。"""
 
-    def __init__(self, role_repository: RoleRepository, event_bus: EventBus) -> None:
-        self._role_repo = role_repository
+    def __init__(self, uow: UnitOfWork, event_bus: EventBus) -> None:
+        self._uow = uow
         self._event_bus = event_bus
 
     async def handle(self, command: UpdateRoleCommand) -> Role:
         """执行更新角色命令。
 
-        Args:
-            command: 更新角色命令
-
-        Returns:
-            Role: 更新后的角色实体
-
         Raises:
             EntityNotFoundException: 角色不存在
         """
-        role = await self._role_repo.find_by_id(command.role_id)
+        role = await self._uow.role_repo.find_by_id(command.role_id)
         if role is None:
             raise EntityNotFoundException(f"角色 {command.role_id} 不存在")
 
@@ -57,5 +43,5 @@ class UpdateRoleHandler:
         if command.status is not None:
             role.status = RoleStatus(command.status)
 
-        await self._role_repo.save(role)
+        await self._uow.role_repo.save(role)
         return role

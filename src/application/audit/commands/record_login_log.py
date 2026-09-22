@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from src.application.shared.unit_of_work import UnitOfWork
 from src.domain.audit.login_log import LoginLog
-from src.domain.audit.repository import LoginLogRepository
 
 
 @dataclass(frozen=True)
@@ -26,13 +26,10 @@ class RecordLoginLogCommand:
 
 
 class RecordLoginLogHandler:
-    """记录登录日志命令处理器。
+    """记录登录日志命令处理器。"""
 
-    创建 LoginLog 聚合根并通过仓储持久化。
-    """
-
-    def __init__(self, login_log_repository: LoginLogRepository) -> None:
-        self._login_log_repo = login_log_repository
+    def __init__(self, uow: UnitOfWork) -> None:
+        self._uow = uow
 
     async def handle(self, command: RecordLoginLogCommand) -> LoginLog:
         """执行记录登录日志命令。
@@ -49,5 +46,5 @@ class RecordLoginLogHandler:
             status=command.status,
             ip_address=command.ip_address,
         )
-        await self._login_log_repo.save(log)
+        await self._uow.login_log_repo.save(log)
         return log
