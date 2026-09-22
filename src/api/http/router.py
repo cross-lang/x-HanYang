@@ -9,7 +9,7 @@ from src.api.http.v1.file_router import router as file_router
 from src.api.http.v1.audit_router import router as audit_router
 from src.api.http.v1.role_router import router as role_router
 
-api_router = APIRouter(prefix="/api/v1", tags=["API V1 路由"])
+api_router = APIRouter(prefix="/api/v1")
 
 # 注册健康管理路由
 api_router.include_router(health_router, tags=["健康检查"])

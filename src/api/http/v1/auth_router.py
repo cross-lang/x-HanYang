@@ -20,7 +20,7 @@ from src.api.http.schemas.auth import LoginRequest, RefreshTokenRequest
 from src.api.http.response import success_response
 from src.utils.helpers import get_client_ip
 
-router = APIRouter(prefix="/auth", tags=["认证"])
+router = APIRouter(prefix="/auth")
 
 
 @router.post("/login", summary="用户登录")
