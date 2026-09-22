@@ -229,8 +229,8 @@ def get_log_file_path() -> str:
     if base_path:
         dir_path: str = os.path.dirname(base_path)
         ext: str = os.path.splitext(base_path)[1] or ".log"
-        return os.path.join(dir_path, f"HanYang-{{time:YYYYMMDDHH}}{ext}")
-    return "logs/HanYang-{time:YYYYMMDDHH}.log"
+        return os.path.join(dir_path, f"x-HanYang-{{time:YYYYMMDDHH}}{ext}")
+    return "logs/x-HanYang-{time:YYYYMMDDHH}.log"
 
 
 logger = _logger

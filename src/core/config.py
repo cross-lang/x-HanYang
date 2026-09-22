@@ -100,7 +100,7 @@ class AppSettings(BaseSettings):
     # ── 日志 ─────────────────────────────────────
     logging_level: str = "INFO"
     logging_format: str = "console"  # "json" 或 "console"
-    logging_file_path: str = "logs/app.log"
+    logging_file_path: str = "logs/x-HanYang-{time:YYYYMMDDHH}.log"
     logging_rotation: str = "1 hour"
     logging_retention: str = "7 days"
 

@@ -20,7 +20,7 @@ from src.api.http.dependencies import (
     get_current_user_dep,
 )
 from src.api.http.schemas.role import CreateRoleRequest, UpdateRoleRequest
-from src.api.shared.response import success_response
+from src.api.http.response import success_response
 
 router = APIRouter(prefix="/roles", tags=["角色管理"])
 

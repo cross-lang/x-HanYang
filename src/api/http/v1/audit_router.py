@@ -10,7 +10,7 @@ from src.api.http.dependencies import (
     get_search_login_logs_handler,
     get_current_user_dep,
 )
-from src.api.shared.response import success_response
+from src.api.http.response import success_response
 
 router = APIRouter(prefix="/audit", tags=["审计日志"])
 

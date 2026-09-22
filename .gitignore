@@ -220,5 +220,6 @@ __marimo__/
 # HanYang project specific
 data/
 uploads/
+logs/
 *.db
 test.db

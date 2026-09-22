@@ -9,7 +9,7 @@ from src.application.auth.handlers import CurrentUserDTO
 from src.application.file.handlers import UploadFileCommand, UploadFileHandler, DownloadFileQuery, DownloadFileHandler
 from src.api.http.dependencies import get_current_user_dep
 from src.api.http.schemas.file import FileUploadResponse
-from src.api.shared.response import success_response
+from src.api.http.response import success_response
 from src.domain.file.storage_provider import StorageProvider
 from src.infrastructure.external.storage_provider import LocalStorageProvider
 from src.core.config import get_settings

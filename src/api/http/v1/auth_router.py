@@ -17,7 +17,7 @@ from src.api.http.dependencies import (
     get_bearer_token,
 )
 from src.api.http.schemas.auth import LoginRequest, RefreshTokenRequest
-from src.api.shared.response import success_response
+from src.api.http.response import success_response
 from src.utils.helpers import get_client_ip
 
 router = APIRouter(prefix="/auth", tags=["认证"])
