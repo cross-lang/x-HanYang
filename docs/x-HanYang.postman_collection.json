@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "x-HanYang-collection",
     "name": "汉阳（HanYang）",
-    "description": "一个基于 DDD 架构的 FastAPI 生产级 Python Web 项目",
+    "description": "一个基于领域驱动设计（DDD）思想，使用 FastAPI 实现的生产级 Python Web 应用框架",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
