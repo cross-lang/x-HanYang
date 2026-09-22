@@ -73,7 +73,7 @@ async def get_role(
     return success_response(vars(result), request)
 
 
-@router.post("/{role_id}/update", summary="更新角色")
+@router.put("/{role_id}", summary="更新角色")
 async def update_role(
     role_id: int,
     body: UpdateRoleRequest,
@@ -87,7 +87,7 @@ async def update_role(
     return success_response({"id": result.id, "role_name": result.role_name, "role_code": result.role_code}, request)
 
 
-@router.post("/{role_id}/delete", summary="删除角色")
+@router.delete("/{role_id}", summary="删除角色")
 async def delete_role(
     role_id: int,
     request: Request,

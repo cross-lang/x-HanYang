@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from src.application.user.dto.user_dto import UserDTO, PaginatedResult
+from src.application.shared.paginated_result import PaginatedResult
+from src.application.user.dto.user_dto import UserDTO
 from src.constants.pagination import DEFAULT_PAGE, DEFAULT_PAGE_SIZE
 from src.domain.user.repository import UserRepository
 

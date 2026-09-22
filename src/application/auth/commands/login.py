@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from src.application.auth.dto.auth_dto import TokenPairDTO
+from src.application.shared.unit_of_work import UnitOfWork
 from src.domain.auth.auth_service import AuthDomainService
 
 
@@ -29,8 +30,9 @@ class LoginHandler:
     编排认证领域服务完成登录流程。
     """
 
-    def __init__(self, auth_domain_service: AuthDomainService) -> None:
+    def __init__(self, auth_domain_service: AuthDomainService, uow: UnitOfWork) -> None:
         self._auth_service = auth_domain_service
+        self._uow = uow
 
     async def handle(self, command: LoginCommand) -> TokenPairDTO:
         """执行登录。
@@ -41,11 +43,12 @@ class LoginHandler:
         Returns:
             TokenPairDTO: 令牌对
         """
-        token_pair = await self._auth_service.authenticate(
-            account=command.account,
-            password=command.password,
-            ip_address=command.ip_address,
-        )
+        async with self._uow:
+            token_pair = await self._auth_service.authenticate(
+                account=command.account,
+                password=command.password,
+                ip_address=command.ip_address,
+            )
         return TokenPairDTO(
             access_token=token_pair.access_token,
             refresh_token=token_pair.refresh_token,

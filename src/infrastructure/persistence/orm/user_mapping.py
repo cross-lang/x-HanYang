@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import BigInteger, DateTime, Index, Integer, String, text
+from sqlalchemy import DateTime, Index, Integer, String, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from src.infrastructure.persistence.database import Base
@@ -30,7 +30,7 @@ class UserTable(Base):
     password_hash: Mapped[str | None] = mapped_column(String(255), nullable=True, comment="密码哈希")
     phone: Mapped[str | None] = mapped_column(String(20), nullable=True, comment="手机号")
     avatar_url: Mapped[str | None] = mapped_column(String(500), nullable=True, comment="头像URL")
-    role_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True, comment="主角色ID")
+    role_id: Mapped[int | None] = mapped_column(Integer, nullable=True, comment="主角色ID")
     status: Mapped[str] = mapped_column(String(20), nullable=False, server_default="active", comment="状态")
     last_login_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, comment="最后登录时间")
     last_login_ip: Mapped[str | None] = mapped_column(String(45), nullable=True, comment="最后登录IP")
@@ -43,6 +43,7 @@ class UserTable(Base):
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, comment="软删除时间")
 
     __table_args__ = (
+        Index("uk_username", "username", unique=True),
         Index("uk_email", "email", unique=True),
         Index("idx_role_id", "role_id"),
     )
@@ -93,10 +94,11 @@ class RolePermissionTable(Base):
     __tablename__ = "role_permissions"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True, comment="主键ID")
-    role_id: Mapped[int] = mapped_column(BigInteger, nullable=False, comment="角色ID")
-    permission_id: Mapped[int] = mapped_column(BigInteger, nullable=False, comment="权限ID")
+    role_id: Mapped[int] = mapped_column(Integer, nullable=False, comment="角色ID")
+    permission_id: Mapped[int] = mapped_column(Integer, nullable=False, comment="权限ID")
 
     __table_args__ = (
+        Index("uk_role_permission", "role_id", "permission_id", unique=True),
         Index("idx_rp_role_id", "role_id"),
         Index("idx_rp_permission_id", "permission_id"),
     )

@@ -6,7 +6,7 @@ import hashlib
 import time
 from dataclasses import dataclass
 
-from src.infrastructure.external.storage_provider import StorageProvider
+from src.domain.file.storage_provider import StorageProvider
 
 
 @dataclass(frozen=True)

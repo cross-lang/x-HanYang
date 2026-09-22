@@ -5,10 +5,11 @@ from __future__ import annotations
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.domain.user.repository import RolePermissionRepository
 from src.infrastructure.persistence.orm.user_mapping import RolePermissionTable
 
 
-class SqlRolePermissionRepository:
+class SqlRolePermissionRepository(RolePermissionRepository):
     """SQLAlchemy 角色-权限关联仓储实现（异步）。"""
 
     def __init__(self, session: AsyncSession) -> None:

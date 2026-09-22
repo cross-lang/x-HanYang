@@ -14,6 +14,7 @@ from src.api.http.dependencies import (
     get_refresh_token_handler,
     get_logout_handler,
     get_current_user_dep,
+    get_bearer_token,
 )
 from src.api.http.schemas.auth import LoginRequest, RefreshTokenRequest
 from src.api.shared.response import success_response
@@ -73,6 +74,7 @@ async def logout(
     request: Request,
     handler: LogoutHandler = Depends(get_logout_handler),
     current_user: CurrentUserDTO = Depends(get_current_user_dep),
+    token: str = Depends(get_bearer_token),
 ) -> dict:
     """退出登录接口。
 
@@ -80,11 +82,12 @@ async def logout(
         request: HTTP 请求
         handler: 退出登录处理器
         current_user: 当前用户
+        token: 访问令牌
 
     Returns:
         dict: 退出成功响应
     """
-    await handler.handle(LogoutCommand(user_id=current_user.id))
+    await handler.handle(LogoutCommand(user_id=current_user.id, token=token))
     return success_response({"message": MSG_LOGOUT_SUCCESS}, request)
 
 

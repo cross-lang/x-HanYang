@@ -10,7 +10,7 @@ from abc import ABC, abstractmethod
 from types import TracebackType
 
 from src.domain.audit.repository import AuditLogRepository, LoginLogRepository
-from src.domain.user.repository import UserRepository, RoleRepository, PermissionRepository
+from src.domain.user.repository import UserRepository, RoleRepository, PermissionRepository, RolePermissionRepository
 
 
 class UnitOfWork(ABC):
@@ -46,6 +46,11 @@ class UnitOfWork(ABC):
     @abstractmethod
     def login_log_repo(self) -> LoginLogRepository:
         """登录日志仓储。"""
+
+    @property
+    @abstractmethod
+    def role_permission_repo(self) -> RolePermissionRepository:
+        """角色-权限关联仓储。"""
 
     @abstractmethod
     async def __aenter__(self) -> UnitOfWork:

@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from src.application.audit.dto.login_log_dto import LoginLogDTO
-from src.application.user.dto.user_dto import PaginatedResult
+from src.application.shared.paginated_result import PaginatedResult
 from src.constants.pagination import DEFAULT_PAGE, DEFAULT_PAGE_SIZE
 from src.domain.audit.repository import LoginLogRepository
 

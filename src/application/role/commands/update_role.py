@@ -32,16 +32,17 @@ class UpdateRoleHandler:
         Raises:
             EntityNotFoundException: 角色不存在
         """
-        role = await self._uow.role_repo.find_by_id(command.role_id)
-        if role is None:
-            raise EntityNotFoundException(f"角色 {command.role_id} 不存在")
+        async with self._uow:
+            role = await self._uow.role_repo.find_by_id(command.role_id)
+            if role is None:
+                raise EntityNotFoundException(f"角色 {command.role_id} 不存在")
 
-        if command.role_name is not None:
-            role.role_name = command.role_name
-        if command.description is not None:
-            role.description = command.description
-        if command.status is not None:
-            role.status = RoleStatus(command.status)
+            if command.role_name is not None:
+                role.role_name = command.role_name
+            if command.description is not None:
+                role.description = command.description
+            if command.status is not None:
+                role.status = RoleStatus(command.status)
 
-        await self._uow.role_repo.save(role)
-        return role
+            await self._uow.role_repo.save(role)
+            return role

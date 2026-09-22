@@ -8,8 +8,12 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 from src.constants.auth import AUTH_SCHEME, DEFAULT_TOKEN_EXPIRES_IN_SECONDS
+
+if TYPE_CHECKING:
+    from src.domain.user.repository import UserRepository
 
 
 @dataclass(frozen=True)
@@ -49,6 +53,11 @@ class AuthDomainService(ABC):
     处理认证相关的跨聚合业务逻辑，如登录、令牌刷新。
     所有方法均为异步。
     """
+
+    @property
+    @abstractmethod
+    def user_repo(self) -> "UserRepository":
+        """用户仓储（由 UoW 提供共享 Session）。"""
 
     @abstractmethod
     async def authenticate(self, account: str, password: str, ip_address: str | None = None) -> TokenPair:
@@ -95,9 +104,10 @@ class AuthDomainService(ABC):
         """
 
     @abstractmethod
-    async def logout(self, user_id: int) -> None:
+    async def logout(self, user_id: int, token: str) -> None:
         """退出登录。
 
         Args:
             user_id: 用户 ID
+            token: 访问令牌（用于加入黑名单）
         """

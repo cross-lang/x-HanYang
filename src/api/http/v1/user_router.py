@@ -122,7 +122,7 @@ async def get_user(
     return success_response(vars(result), request)
 
 
-@router.post("/{user_id}/update", summary="更新用户")
+@router.put("/{user_id}", summary="更新用户")
 async def update_user(
     user_id: int,
     body: UpdateUserRequest,
@@ -158,7 +158,7 @@ async def update_user(
     )
 
 
-@router.post("/{user_id}/delete", summary="删除用户")
+@router.delete("/{user_id}", summary="删除用户")
 async def delete_user(
     user_id: int,
     request: Request,

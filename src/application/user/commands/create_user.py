@@ -58,20 +58,22 @@ class CreateUserHandler:
         Raises:
             ConflictException: 邮箱或用户名已存在
         """
-        email = Email(command.email)
-        if await self._uow.user_repo.find_by_email(email.value) is not None:
-            raise ConflictException(f"邮箱 {command.email} 已被注册")
-        if await self._uow.user_repo.find_by_username(command.username) is not None:
-            raise ConflictException(f"用户名 {command.username} 已存在")
+        async with self._uow:
+            email = Email(command.email)
+            if await self._uow.user_repo.find_by_email(email.value) is not None:
+                raise ConflictException(f"邮箱 {command.email} 已被注册")
+            if await self._uow.user_repo.find_by_username(command.username) is not None:
+                raise ConflictException(f"用户名 {command.username} 已存在")
 
-        password = Password.from_raw(command.password)
-        user = User.create(
-            username=command.username, email=email, password=password,
-            name=command.name, phone=command.phone, role_id=command.role_id,
-        )
+            password = Password.from_raw(command.password)
+            user = User.create(
+                username=command.username, email=email, password=password,
+                name=command.name, phone=command.phone, role_id=command.role_id,
+            )
 
-        await self._uow.user_repo.save(user)
+            await self._uow.user_repo.save(user)
 
+        # UoW 已提交，安全发布事件
         events = user.collect_and_clear_events()
         await self._event_bus.publish_all(events)
 

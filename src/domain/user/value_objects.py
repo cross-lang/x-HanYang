@@ -9,10 +9,14 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 from enum import Enum
+from typing import TYPE_CHECKING
 
 from src.constants.auth import PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH
 from src.domain.shared.domain_exception import ValidationException
 from src.domain.shared.value_object import ValueObject
+
+if TYPE_CHECKING:
+    from src.domain.password_hasher import PasswordHasher
 
 
 # ── 枚举 ─────────────────────────────────────────────────
@@ -52,6 +56,12 @@ class Password(ValueObject):
 
     封装密码的明文和哈希值，提供密码强度校验。
     哈希操作延迟到首次调用 hashed() 时执行。
+
+    使用方式：
+        1. 从明文构造：Password.from_raw("my-password")
+        2. 从数据库恢复：Password.from_hashed("$2b$...")
+        3. 生成哈希：password.hashed(hasher)
+        4. 验证密码：password.verify("my-password", hasher)
 
     Attributes:
         _raw: 原始明文密码（仅在构造时存在）
@@ -94,28 +104,38 @@ class Password(ValueObject):
         """
         return cls(_raw="", _hashed=hashed)
 
-    def hashed(self) -> str:
+    def hashed(self, hasher: "PasswordHasher | None" = None) -> str:
         """获取密码哈希值。
+
+        Args:
+            hasher: 密码哈希器（为 None 时使用 bcrypt 兜底，保持向后兼容）
 
         Returns:
             str: 密码哈希字符串
         """
         if not self._hashed:
-            # 延迟导入，避免 domain 层直接依赖 shared.security
-            from src.shared.security import hash_password
-
-            object.__setattr__(self, "_hashed", hash_password(self._raw))
+            if hasher is not None:
+                object.__setattr__(self, "_hashed", hasher.hash(self._raw))
+            else:
+                # 兜底：直接使用 bcrypt（兼容不传 hasher 的场景）
+                import bcrypt
+                object.__setattr__(
+                    self, "_hashed",
+                    bcrypt.hashpw(self._raw.encode("utf-8"), bcrypt.gensalt()).decode("utf-8"),
+                )
         return self._hashed
 
-    def verify(self, plain: str) -> bool:
+    def verify(self, plain: str, hasher: "PasswordHasher | None" = None) -> bool:
         """验证明文密码是否匹配。
 
         Args:
             plain: 待验证的明文密码
+            hasher: 密码哈希器（为 None 时使用 bcrypt 兜底）
 
         Returns:
             bool: 是否匹配
         """
-        from src.shared.security import verify_password
-
-        return verify_password(plain, self._hashed)
+        if hasher is not None:
+            return hasher.verify(plain, self._hashed)
+        import bcrypt
+        return bcrypt.checkpw(plain.encode("utf-8"), self._hashed.encode("utf-8"))

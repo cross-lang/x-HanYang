@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import DateTime, Integer, String, Text, text
+from sqlalchemy import DateTime, Index, Integer, String, Text, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from src.infrastructure.persistence.database import Base
@@ -29,6 +29,10 @@ class AuditLogTable(Base):
         DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP"), comment="创建时间"
     )
 
+    __table_args__ = (
+        Index("idx_audit_entity", "entity_type", "entity_id"),
+    )
+
 
 class LoginLogTable(Base):
     """登录日志表。"""
@@ -42,4 +46,8 @@ class LoginLogTable(Base):
     ip_address: Mapped[str | None] = mapped_column(String(45), nullable=True, comment="IP地址")
     created_at: Mapped[datetime] = mapped_column(
         DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP"), comment="创建时间"
+    )
+
+    __table_args__ = (
+        Index("idx_login_log_user_id", "user_id"),
     )

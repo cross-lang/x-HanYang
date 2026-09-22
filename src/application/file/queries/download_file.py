@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 from dataclasses import dataclass
 
-from src.infrastructure.external.storage_provider import StorageProvider
+from src.domain.file.storage_provider import StorageProvider
 
 
 @dataclass(frozen=True)

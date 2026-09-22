@@ -11,7 +11,8 @@ from src.application.file.queries.download_file import DownloadFileQuery, Downlo
 from src.api.http.dependencies import get_current_user_dep
 from src.api.http.schemas.file import FileUploadResponse
 from src.api.shared.response import success_response
-from src.infrastructure.external.storage_provider import StorageProvider, LocalStorageProvider
+from src.domain.file.storage_provider import StorageProvider
+from src.infrastructure.external.storage_provider import LocalStorageProvider
 from src.infrastructure.config.settings import get_settings
 
 router = APIRouter(prefix="/files", tags=["文件管理"])

@@ -1,26 +1,14 @@
-"""文件存储提供者。"""
+"""文件存储提供者。
+
+实现领域层 StorageProvider 接口。
+"""
 
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
+import os
 
+from src.domain.file.storage_provider import StorageProvider
 from src.shared.logger import logger
-
-
-class StorageProvider(ABC):
-    """文件存储接口。"""
-
-    @abstractmethod
-    def upload(self, key: str, data: bytes, content_type: str | None = None) -> str:
-        """上传文件，返回访问 URL。"""
-
-    @abstractmethod
-    def download(self, key: str) -> bytes:
-        """下载文件。"""
-
-    @abstractmethod
-    def delete(self, key: str) -> bool:
-        """删除文件。"""
 
 
 class LocalStorageProvider(StorageProvider):

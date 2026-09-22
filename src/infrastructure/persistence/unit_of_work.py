@@ -12,12 +12,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.application.shared.unit_of_work import UnitOfWork
 from src.domain.audit.repository import AuditLogRepository, LoginLogRepository
-from src.domain.user.repository import UserRepository, RoleRepository, PermissionRepository
+from src.domain.user.repository import UserRepository, RoleRepository, PermissionRepository, RolePermissionRepository
 from src.infrastructure.persistence.repositories.user_repository import SqlUserRepository
 from src.infrastructure.persistence.repositories.role_repository import SqlRoleRepository
 from src.infrastructure.persistence.repositories.permission_repository import SqlPermissionRepository
 from src.infrastructure.persistence.repositories.audit_repository import SqlAuditLogRepository
 from src.infrastructure.persistence.repositories.login_log_repository import SqlLoginLogRepository
+from src.infrastructure.persistence.repositories.role_permission_repository import SqlRolePermissionRepository
 
 
 class SqlUnitOfWork(UnitOfWork):
@@ -36,6 +37,7 @@ class SqlUnitOfWork(UnitOfWork):
         self._permission_repo: PermissionRepository | None = None
         self._audit_repo: AuditLogRepository | None = None
         self._login_log_repo: LoginLogRepository | None = None
+        self._role_permission_repo: RolePermissionRepository | None = None
 
     @property
     def user_repo(self) -> UserRepository:
@@ -71,6 +73,13 @@ class SqlUnitOfWork(UnitOfWork):
         if self._login_log_repo is None:
             self._login_log_repo = SqlLoginLogRepository(session=self._session)
         return self._login_log_repo
+
+    @property
+    def role_permission_repo(self) -> RolePermissionRepository:
+        """角色-权限关联仓储。"""
+        if self._role_permission_repo is None:
+            self._role_permission_repo = SqlRolePermissionRepository(session=self._session)
+        return self._role_permission_repo
 
     @property
     def session(self) -> AsyncSession:

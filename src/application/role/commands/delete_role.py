@@ -28,8 +28,9 @@ class DeleteRoleHandler:
         Raises:
             EntityNotFoundException: 角色不存在
         """
-        role = await self._uow.role_repo.find_by_id(command.role_id)
-        if role is None:
-            raise EntityNotFoundException(f"角色 {command.role_id} 不存在")
+        async with self._uow:
+            role = await self._uow.role_repo.find_by_id(command.role_id)
+            if role is None:
+                raise EntityNotFoundException(f"角色 {command.role_id} 不存在")
 
-        return await self._uow.role_repo.delete(command.role_id)
+            return await self._uow.role_repo.delete(command.role_id)

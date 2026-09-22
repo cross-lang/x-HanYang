@@ -176,3 +176,30 @@ class PermissionRepository(ABC):
         Returns:
             bool: 是否成功删除
         """
+
+
+class RolePermissionRepository(ABC):
+    """角色-权限关联仓储接口。
+
+    管理角色与权限的多对多关系。
+    """
+
+    @abstractmethod
+    async def get_permission_ids_by_role(self, role_id: int) -> list[int]:
+        """获取角色关联的所有权限 ID。"""
+
+    @abstractmethod
+    async def assign(self, role_id: int, permission_id: int) -> None:
+        """为角色分配权限（幂等）。"""
+
+    @abstractmethod
+    async def revoke(self, role_id: int, permission_id: int) -> bool:
+        """移除角色的指定权限。"""
+
+    @abstractmethod
+    async def revoke_all_for_role(self, role_id: int) -> int:
+        """移除角色的所有权限。"""
+
+    @abstractmethod
+    async def set_permissions_for_role(self, role_id: int, permission_ids: list[int]) -> None:
+        """设置角色的权限列表（全量替换）。"""

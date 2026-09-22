@@ -32,12 +32,13 @@ class CreateRoleHandler:
         Raises:
             ConflictException: 角色编码已存在
         """
-        if await self._uow.role_repo.find_by_role_code(command.role_code) is not None:
-            raise ConflictException(f"角色编码 {command.role_code} 已存在")
+        async with self._uow:
+            if await self._uow.role_repo.find_by_role_code(command.role_code) is not None:
+                raise ConflictException(f"角色编码 {command.role_code} 已存在")
 
-        role = Role(
-            role_name=command.role_name, role_code=command.role_code,
-            description=command.description, role_type=RoleType(command.role_type),
-        )
-        await self._uow.role_repo.save(role)
-        return role
+            role = Role(
+                role_name=command.role_name, role_code=command.role_code,
+                description=command.description, role_type=RoleType(command.role_type),
+            )
+            await self._uow.role_repo.save(role)
+            return role

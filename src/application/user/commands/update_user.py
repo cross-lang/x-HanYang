@@ -38,30 +38,31 @@ class UpdateUserHandler:
             EntityNotFoundException: 用户不存在
             ConflictException: 邮箱已被其他用户占用
         """
-        user = await self._uow.user_repo.find_by_id(command.user_id)
-        if user is None:
-            raise EntityNotFoundException(f"用户 {command.user_id} 不存在")
+        async with self._uow:
+            user = await self._uow.user_repo.find_by_id(command.user_id)
+            if user is None:
+                raise EntityNotFoundException(f"用户 {command.user_id} 不存在")
 
-        if command.email is not None:
-            new_email = Email(command.email)
-            existing = await self._uow.user_repo.find_by_email(command.email)
-            if existing is not None and existing.id != command.user_id:
-                raise ConflictException(f"邮箱 {command.email} 已被其他用户占用")
-            user.change_email(new_email)
+            if command.email is not None:
+                new_email = Email(command.email)
+                existing = await self._uow.user_repo.find_by_email(command.email)
+                if existing is not None and existing.id != command.user_id:
+                    raise ConflictException(f"邮箱 {command.email} 已被其他用户占用")
+                user.change_email(new_email)
 
-        if command.password is not None:
-            user.change_password(Password.from_raw(command.password))
+            if command.password is not None:
+                user.change_password(Password.from_raw(command.password))
 
-        if command.name is not None:
-            user.name = command.name
-        if command.phone is not None:
-            user.phone = command.phone
-        if command.avatar_url is not None:
-            user.avatar_url = command.avatar_url
-        if command.role_id is not None:
-            user.role_id = command.role_id
+            if command.name is not None:
+                user.name = command.name
+            if command.phone is not None:
+                user.phone = command.phone
+            if command.avatar_url is not None:
+                user.avatar_url = command.avatar_url
+            if command.role_id is not None:
+                user.role_id = command.role_id
 
-        await self._uow.user_repo.save(user)
+            await self._uow.user_repo.save(user)
 
         events = user.collect_and_clear_events()
         await self._event_bus.publish_all(events)

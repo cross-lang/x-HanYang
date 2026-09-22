@@ -40,11 +40,12 @@ class RecordLoginLogHandler:
         Returns:
             LoginLog: 创建的登录日志聚合根
         """
-        log = LoginLog(
-            user_id=command.user_id,
-            login_type=command.login_type,
-            status=command.status,
-            ip_address=command.ip_address,
-        )
-        await self._uow.login_log_repo.save(log)
-        return log
+        async with self._uow:
+            log = LoginLog(
+                user_id=command.user_id,
+                login_type=command.login_type,
+                status=command.status,
+                ip_address=command.ip_address,
+            )
+            await self._uow.login_log_repo.save(log)
+            return log

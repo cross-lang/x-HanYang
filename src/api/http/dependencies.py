@@ -18,6 +18,7 @@ from src.application.auth.commands.logout import LogoutHandler
 from src.application.auth.queries.get_current_user import GetCurrentUserHandler
 from src.application.auth.dto.auth_dto import CurrentUserDTO
 from src.application.shared.event_bus import EventBus
+from src.application.shared.unit_of_work import UnitOfWork
 from src.application.user.commands.create_user import CreateUserHandler
 from src.application.user.commands.update_user import UpdateUserHandler
 from src.application.user.commands.delete_user import DeleteUserHandler
@@ -28,16 +29,14 @@ from src.application.role.commands.update_role import UpdateRoleHandler
 from src.application.role.commands.delete_role import DeleteRoleHandler
 from src.application.role.queries.get_role import GetRoleHandler
 from src.application.role.queries.search_roles import SearchRolesHandler
-from src.constants.messages import MSG_MISSING_TOKEN, MSG_INVALID_OR_EXPIRED_TOKEN
+from src.constants.messages import MSG_INVALID_OR_EXPIRED_TOKEN, MSG_MISSING_TOKEN
 from src.domain.audit.repository import LoginLogRepository
 from src.domain.auth.auth_service import AuthDomainService
-from src.domain.user.repository import UserRepository, RoleRepository
+from src.domain.user.repository import RoleRepository, UserRepository
 from src.infrastructure.auth.auth_domain_service import InfraAuthDomainService
 from src.infrastructure.config.settings import get_settings
 from src.infrastructure.persistence.database import get_session
-from src.infrastructure.persistence.repositories.login_log_repository import SqlLoginLogRepository
-from src.infrastructure.persistence.repositories.user_repository import SqlUserRepository
-from src.infrastructure.persistence.repositories.role_repository import SqlRoleRepository
+from src.infrastructure.persistence.unit_of_work import SqlUnitOfWork
 from src.infrastructure.messaging.event_dispatcher import InMemoryEventBus
 
 _bearer_scheme = HTTPBearer(auto_error=False)
@@ -59,134 +58,117 @@ def get_event_bus() -> EventBus:
     return _event_bus
 
 
-def get_user_repository(session: AsyncSession = Depends(get_session)) -> UserRepository:
-    """获取用户仓储实例（注入异步 Session）。
-
-    Args:
-        session: 异步数据库会话
+def get_uow(session: AsyncSession = Depends(get_session)) -> UnitOfWork:
+    """获取工作单元实例（注入异步 Session）。
 
     Returns:
-        UserRepository: 用户仓储实例
+        UnitOfWork: 工作单元实例
     """
-    return SqlUserRepository(session=session)
+    return SqlUnitOfWork(session=session)
+
+
+def get_user_repository(uow: UnitOfWork = Depends(get_uow)) -> UserRepository:
+    """获取用户仓储实例。
+
+    从 UoW 获取以共享同一 Session，查询处理器使用此依赖。
+    """
+    return uow.user_repo
+
+
+def get_role_repository(uow: UnitOfWork = Depends(get_uow)) -> RoleRepository:
+    """获取角色仓储实例。
+
+    从 UoW 获取以共享同一 Session，查询处理器使用此依赖。
+    """
+    return uow.role_repo
 
 
 def get_login_log_repository(
-    session: AsyncSession = Depends(get_session),
+    uow: UnitOfWork = Depends(get_uow),
 ) -> LoginLogRepository:
-    """获取登录日志仓储实例（注入异步 Session）。
+    """获取登录日志仓储实例。
 
-    Args:
-        session: 异步数据库会话
+    从 UoW 获取以共享同一 Session，查询处理器使用此依赖。
+    """
+    return uow.login_log_repo
+
+
+def get_bearer_token(
+    credentials: HTTPAuthorizationCredentials | None = Depends(_bearer_scheme),
+) -> str:
+    """提取 Bearer 令牌字符串。
 
     Returns:
-        LoginLogRepository: 登录日志仓储实例
+        str: 访问令牌
+
+    Raises:
+        HTTPException: 401 缺少令牌
     """
-    return SqlLoginLogRepository(session=session)
+    if credentials is None:
+        raise HTTPException(status_code=401, detail=MSG_MISSING_TOKEN)
+    return credentials.credentials
 
 
 # ── 认证领域服务 ─────────────────────────────────────
 
 
 def get_auth_domain_service(
-    user_repo: UserRepository = Depends(get_user_repository),
-    login_log_repo: LoginLogRepository = Depends(get_login_log_repository),
+    uow: UnitOfWork = Depends(get_uow),
 ) -> AuthDomainService:
     """获取认证领域服务实例。
 
-    Args:
-        user_repo: 用户仓储
-        login_log_repo: 登录日志仓储
-
-    Returns:
-        AuthDomainService: 认证领域服务实例
+    通过 UoW 注入，确保认证操作在同一事务中。
     """
     settings = get_settings()
     return InfraAuthDomainService(
-        user_repository=user_repo,
+        uow=uow,
         secret_key=settings.auth_secret_key,
         algorithm=settings.auth_algorithm,
         access_token_expire_minutes=settings.auth_access_token_expire_minutes,
-        login_log_repository=login_log_repo,
     )
 
 
-# ── 用户 Handler ─────────────────────────────────────
+# ── 用户命令 Handler（通过 UoW 注入）────────────────
 
 
 def get_create_user_handler(
-    user_repo: UserRepository = Depends(get_user_repository),
+    uow: UnitOfWork = Depends(get_uow),
     event_bus: EventBus = Depends(get_event_bus),
 ) -> CreateUserHandler:
-    """获取创建用户处理器。
-
-    Args:
-        user_repo: 用户仓储
-        event_bus: 事件总线
-
-    Returns:
-        CreateUserHandler: 处理器实例
-    """
-    return CreateUserHandler(user_repository=user_repo, event_bus=event_bus)
+    """获取创建用户处理器。"""
+    return CreateUserHandler(uow=uow, event_bus=event_bus)
 
 
 def get_update_user_handler(
-    user_repo: UserRepository = Depends(get_user_repository),
+    uow: UnitOfWork = Depends(get_uow),
     event_bus: EventBus = Depends(get_event_bus),
 ) -> UpdateUserHandler:
-    """获取更新用户处理器。
-
-    Args:
-        user_repo: 用户仓储
-        event_bus: 事件总线
-
-    Returns:
-        UpdateUserHandler: 处理器实例
-    """
-    return UpdateUserHandler(user_repository=user_repo, event_bus=event_bus)
+    """获取更新用户处理器。"""
+    return UpdateUserHandler(uow=uow, event_bus=event_bus)
 
 
 def get_delete_user_handler(
-    user_repo: UserRepository = Depends(get_user_repository),
+    uow: UnitOfWork = Depends(get_uow),
     event_bus: EventBus = Depends(get_event_bus),
 ) -> DeleteUserHandler:
-    """获取删除用户处理器。
+    """获取删除用户处理器。"""
+    return DeleteUserHandler(uow=uow, event_bus=event_bus)
 
-    Args:
-        user_repo: 用户仓储
-        event_bus: 事件总线
 
-    Returns:
-        DeleteUserHandler: 处理器实例
-    """
-    return DeleteUserHandler(user_repository=user_repo, event_bus=event_bus)
+# ── 用户查询 Handler（通过独立仓储注入）─────────────
 
 
 def get_get_user_handler(
     user_repo: UserRepository = Depends(get_user_repository),
 ) -> GetUserHandler:
-    """获取查询用户处理器。
-
-    Args:
-        user_repo: 用户仓储
-
-    Returns:
-        GetUserHandler: 处理器实例
-    """
+    """获取查询用户处理器。"""
     return GetUserHandler(user_repository=user_repo)
 
 
 def get_search_users_handler(
     user_repo: UserRepository = Depends(get_user_repository),
 ) -> SearchUsersHandler:
-    """获取搜索用户处理器。
-
-    Args:
-        user_repo: 用户仓储
-
-    Returns:
-        SearchUsersHandler: 处理器实例
-    """
+    """获取搜索用户处理器。"""
     return SearchUsersHandler(user_repository=user_repo)
 
 
@@ -195,57 +177,31 @@ def get_search_users_handler(
 
 def get_login_handler(
     auth_service: AuthDomainService = Depends(get_auth_domain_service),
+    uow: UnitOfWork = Depends(get_uow),
 ) -> LoginHandler:
-    """获取登录处理器。
-
-    Args:
-        auth_service: 认证领域服务
-
-    Returns:
-        LoginHandler: 处理器实例
-    """
-    return LoginHandler(auth_domain_service=auth_service)
+    """获取登录处理器。"""
+    return LoginHandler(auth_domain_service=auth_service, uow=uow)
 
 
 def get_refresh_token_handler(
     auth_service: AuthDomainService = Depends(get_auth_domain_service),
 ) -> RefreshTokenHandler:
-    """获取刷新令牌处理器。
-
-    Args:
-        auth_service: 认证领域服务
-
-    Returns:
-        RefreshTokenHandler: 处理器实例
-    """
+    """获取刷新令牌处理器。"""
     return RefreshTokenHandler(auth_domain_service=auth_service)
 
 
 def get_logout_handler(
     auth_service: AuthDomainService = Depends(get_auth_domain_service),
+    uow: UnitOfWork = Depends(get_uow),
 ) -> LogoutHandler:
-    """获取退出登录处理器。
-
-    Args:
-        auth_service: 认证领域服务
-
-    Returns:
-        LogoutHandler: 处理器实例
-    """
-    return LogoutHandler(auth_domain_service=auth_service)
+    """获取退出登录处理器。"""
+    return LogoutHandler(auth_domain_service=auth_service, uow=uow)
 
 
 def get_current_user_handler(
     auth_service: AuthDomainService = Depends(get_auth_domain_service),
 ) -> GetCurrentUserHandler:
-    """获取当前用户查询处理器。
-
-    Args:
-        auth_service: 认证领域服务
-
-    Returns:
-        GetCurrentUserHandler: 处理器实例
-    """
+    """获取当前用户查询处理器。"""
     return GetCurrentUserHandler(auth_domain_service=auth_service)
 
 
@@ -255,71 +211,45 @@ def get_current_user_handler(
 def get_search_login_logs_handler(
     login_log_repo: LoginLogRepository = Depends(get_login_log_repository),
 ) -> SearchLoginLogsHandler:
-    """获取搜索登录日志处理器。
-
-    Args:
-        login_log_repo: 登录日志仓储
-
-    Returns:
-        SearchLoginLogsHandler: 处理器实例
-    """
+    """获取搜索登录日志处理器。"""
     return SearchLoginLogsHandler(login_log_repository=login_log_repo)
 
 
 def get_record_login_log_handler(
-    login_log_repo: LoginLogRepository = Depends(get_login_log_repository),
+    uow: UnitOfWork = Depends(get_uow),
 ) -> RecordLoginLogHandler:
-    """获取记录登录日志处理器。
-
-    Args:
-        login_log_repo: 登录日志仓储
-
-    Returns:
-        RecordLoginLogHandler: 处理器实例
-    """
-    return RecordLoginLogHandler(login_log_repository=login_log_repo)
+    """获取记录登录日志处理器。"""
+    return RecordLoginLogHandler(uow=uow)
 
 
-# ── 角色仓储 ─────────────────────────────────────
-
-
-def get_role_repository(session: AsyncSession = Depends(get_session)) -> RoleRepository:
-    """获取角色仓储实例。
-
-    Args:
-        session: 异步数据库会话
-
-    Returns:
-        RoleRepository: 角色仓储实例
-    """
-    return SqlRoleRepository(session=session)
-
-
-# ── 角色 Handler ─────────────────────────────────
+# ── 角色命令 Handler（通过 UoW 注入）────────────────
 
 
 def get_create_role_handler(
-    role_repo: RoleRepository = Depends(get_role_repository),
+    uow: UnitOfWork = Depends(get_uow),
     event_bus: EventBus = Depends(get_event_bus),
 ) -> CreateRoleHandler:
     """获取创建角色处理器。"""
-    return CreateRoleHandler(role_repository=role_repo, event_bus=event_bus)
+    return CreateRoleHandler(uow=uow, event_bus=event_bus)
 
 
 def get_update_role_handler(
-    role_repo: RoleRepository = Depends(get_role_repository),
+    uow: UnitOfWork = Depends(get_uow),
     event_bus: EventBus = Depends(get_event_bus),
 ) -> UpdateRoleHandler:
     """获取更新角色处理器。"""
-    return UpdateRoleHandler(role_repository=role_repo, event_bus=event_bus)
+    return UpdateRoleHandler(uow=uow, event_bus=event_bus)
 
 
 def get_delete_role_handler(
-    role_repo: RoleRepository = Depends(get_role_repository),
+    uow: UnitOfWork = Depends(get_uow),
     event_bus: EventBus = Depends(get_event_bus),
 ) -> DeleteRoleHandler:
     """获取删除角色处理器。"""
-    return DeleteRoleHandler(role_repository=role_repo, event_bus=event_bus)
+    return DeleteRoleHandler(uow=uow, event_bus=event_bus)
+
+
+# ── 角色查询 Handler（通过独立仓储注入）─────────────
 
 
 def get_get_role_handler(
