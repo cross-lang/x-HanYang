@@ -35,13 +35,13 @@ from slowapi.middleware import SlowAPIMiddleware
 from src.constants.app import APP_NAME, APP_VERSION, APP_DESCRIPTION
 from src.constants.http import DOCS_URL, REDOC_URL
 from src.constants.messages import MSG_INTERNAL_SERVER_ERROR
-from src.interfaces.http.router import api_router
-from src.interfaces.http.middleware import (
+from src.api.http.router import api_router
+from src.api.http.middleware import (
     ExceptionHandlingMiddleware,
     RequestIDMiddleware,
     RequestLoggingMiddleware,
 )
-from src.interfaces.http.exception_handlers import register_exception_handlers
+from src.api.http.exception_handlers import register_exception_handlers
 from src.infrastructure.config.settings import get_settings
 from src.infrastructure.external.rate_limiter import get_limiter
 from src.shared.logger import logger

@@ -8,9 +8,9 @@ from fastapi.responses import Response
 from src.application.auth.dto.auth_dto import CurrentUserDTO
 from src.application.file.commands.upload_file import UploadFileCommand, UploadFileHandler
 from src.application.file.queries.download_file import DownloadFileQuery, DownloadFileHandler
-from src.interfaces.http.dependencies import get_current_user_dep
-from src.interfaces.http.schemas.file import FileUploadResponse
-from src.interfaces.shared.response import success_response
+from src.api.http.dependencies import get_current_user_dep
+from src.api.http.schemas.file import FileUploadResponse
+from src.api.shared.response import success_response
 from src.infrastructure.external.storage_provider import StorageProvider, LocalStorageProvider
 from src.infrastructure.config.settings import get_settings
 

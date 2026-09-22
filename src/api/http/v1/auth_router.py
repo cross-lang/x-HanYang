@@ -9,14 +9,14 @@ from src.application.auth.commands.refresh_token import RefreshTokenCommand, Ref
 from src.application.auth.commands.logout import LogoutCommand, LogoutHandler
 from src.application.auth.dto.auth_dto import CurrentUserDTO
 from src.constants.messages import MSG_LOGOUT_SUCCESS
-from src.interfaces.http.dependencies import (
+from src.api.http.dependencies import (
     get_login_handler,
     get_refresh_token_handler,
     get_logout_handler,
     get_current_user_dep,
 )
-from src.interfaces.http.schemas.auth import LoginRequest, RefreshTokenRequest
-from src.interfaces.shared.response import success_response
+from src.api.http.schemas.auth import LoginRequest, RefreshTokenRequest
+from src.api.shared.response import success_response
 from src.utils.helpers import get_client_ip
 
 router = APIRouter(prefix="/auth", tags=["认证"])

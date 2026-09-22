@@ -14,7 +14,7 @@ from src.application.user.queries.get_user import GetUserQuery, GetUserHandler
 from src.application.user.queries.search_users import SearchUsersQuery, SearchUsersHandler
 from src.application.auth.dto.auth_dto import CurrentUserDTO
 from src.constants.messages import MSG_USER_DELETED
-from src.interfaces.http.dependencies import (
+from src.api.http.dependencies import (
     get_create_user_handler,
     get_update_user_handler,
     get_delete_user_handler,
@@ -22,8 +22,8 @@ from src.interfaces.http.dependencies import (
     get_search_users_handler,
     get_current_user_dep,
 )
-from src.interfaces.http.schemas.user import CreateUserRequest, UpdateUserRequest
-from src.interfaces.shared.response import success_response
+from src.api.http.schemas.user import CreateUserRequest, UpdateUserRequest
+from src.api.shared.response import success_response
 
 router = APIRouter(prefix="/users", tags=["用户管理"])
 

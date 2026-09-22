@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Request
 
-from src.interfaces.shared.response import success_response
+from src.api.shared.response import success_response
 
 router = APIRouter(tags=["健康检查"])
 

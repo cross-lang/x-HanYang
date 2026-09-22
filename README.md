@@ -12,7 +12,7 @@
 
 **核心特征：**
 
-- 严格遵循 DDD 四层架构：领域层（Domain）→ 应用层（Application）→ 基础设施层（Infrastructure）→ 接口层（Interfaces）
+- 严格遵循 DDD 四层架构：领域层（Domain）→ 应用层（Application）→ 基础设施层（Infrastructure）→ 接口层（API）
 - 全异步架构：基于 SQLAlchemy 2.0 异步引擎 + asyncio，适配高并发场景
 - CQRS 命令/查询分离：写操作与读操作独立编排，职责清晰
 - 领域事件驱动：聚合根收集领域事件，事件总线统一分发
@@ -196,7 +196,7 @@ x-HanYang/
 │   │   ├── external/                 #   外部服务适配器（缓存、邮件、存储、HTTP 客户端、限流）
 │   │   ├── messaging/                #   事件总线实现（内存事件分发器）
 │   │   └── persistence/              #   持久化（异步数据库、ORM 映射、仓储实现、工作单元、迁移）
-│   ├── interfaces/                   # 接口层 — HTTP / MQ / gRPC 入口
+│   ├── api/                   # 接口层 — HTTP / MQ / gRPC 入口
 │   │   ├── http/                     #   HTTP 接口
 │   │   │   ├── schemas/              #     Pydantic 请求/响应 Schema
 │   │   │   └── v1/                   #     API v1 路由（health/auth/user/role/file/audit）
@@ -222,7 +222,7 @@ x-HanYang/
 
 ```mermaid
 graph TB
-    subgraph "接口层 Interfaces"
+    subgraph "接口层 api"
         HTTP[HTTP 路由 / 中间件 / 异常处理器]
         Schemas[Pydantic Schema 校验]
     end

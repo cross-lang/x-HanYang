@@ -11,7 +11,7 @@ from src.application.role.queries.get_role import GetRoleQuery, GetRoleHandler
 from src.application.role.queries.search_roles import SearchRolesQuery, SearchRolesHandler
 from src.application.auth.dto.auth_dto import CurrentUserDTO
 from src.constants.messages import MSG_ROLE_DELETED
-from src.interfaces.http.dependencies import (
+from src.api.http.dependencies import (
     get_create_role_handler,
     get_update_role_handler,
     get_delete_role_handler,
@@ -19,8 +19,8 @@ from src.interfaces.http.dependencies import (
     get_search_roles_handler,
     get_current_user_dep,
 )
-from src.interfaces.http.schemas.role import CreateRoleRequest, UpdateRoleRequest
-from src.interfaces.shared.response import success_response
+from src.api.http.schemas.role import CreateRoleRequest, UpdateRoleRequest
+from src.api.shared.response import success_response
 
 router = APIRouter(prefix="/roles", tags=["角色管理"])
 

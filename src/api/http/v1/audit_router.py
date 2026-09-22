@@ -9,11 +9,11 @@ from src.application.audit.queries.search_login_logs import (
     SearchLoginLogsHandler,
 )
 from src.application.auth.dto.auth_dto import CurrentUserDTO
-from src.interfaces.http.dependencies import (
+from src.api.http.dependencies import (
     get_search_login_logs_handler,
     get_current_user_dep,
 )
-from src.interfaces.shared.response import success_response
+from src.api.shared.response import success_response
 
 router = APIRouter(prefix="/audit", tags=["审计日志"])
 
