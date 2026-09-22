@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, Request
 
-from src.application.auth.commands.login import LoginCommand, LoginHandler
-from src.application.auth.commands.refresh_token import RefreshTokenCommand, RefreshTokenHandler
-from src.application.auth.commands.logout import LogoutCommand, LogoutHandler
-from src.application.auth.dto.auth_dto import CurrentUserDTO
+from src.application.auth.handlers import (
+    LoginCommand, LoginHandler, RefreshTokenCommand, RefreshTokenHandler,
+    LogoutCommand, LogoutHandler, CurrentUserDTO,
+)
 from src.constants.messages import MSG_LOGOUT_SUCCESS
 from src.api.http.dependencies import (
     get_login_handler,

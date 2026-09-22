@@ -7,12 +7,12 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, Request
 
-from src.application.user.commands.create_user import CreateUserCommand, CreateUserHandler
-from src.application.user.commands.update_user import UpdateUserCommand, UpdateUserHandler
-from src.application.user.commands.delete_user import DeleteUserCommand, DeleteUserHandler
-from src.application.user.queries.get_user import GetUserQuery, GetUserHandler
-from src.application.user.queries.search_users import SearchUsersQuery, SearchUsersHandler
-from src.application.auth.dto.auth_dto import CurrentUserDTO
+from src.application.user.handlers import (
+    CreateUserCommand, CreateUserHandler, UpdateUserCommand, UpdateUserHandler,
+    DeleteUserCommand, DeleteUserHandler, GetUserQuery, GetUserHandler,
+    SearchUsersQuery, SearchUsersHandler,
+)
+from src.application.auth.handlers import CurrentUserDTO
 from src.constants.messages import MSG_USER_DELETED
 from src.api.http.dependencies import (
     get_create_user_handler,

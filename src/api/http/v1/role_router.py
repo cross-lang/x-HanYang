@@ -4,12 +4,12 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, Request
 
-from src.application.role.commands.create_role import CreateRoleCommand, CreateRoleHandler
-from src.application.role.commands.update_role import UpdateRoleCommand, UpdateRoleHandler
-from src.application.role.commands.delete_role import DeleteRoleCommand, DeleteRoleHandler
-from src.application.role.queries.get_role import GetRoleQuery, GetRoleHandler
-from src.application.role.queries.search_roles import SearchRolesQuery, SearchRolesHandler
-from src.application.auth.dto.auth_dto import CurrentUserDTO
+from src.application.role.handlers import (
+    CreateRoleCommand, CreateRoleHandler, UpdateRoleCommand, UpdateRoleHandler,
+    DeleteRoleCommand, DeleteRoleHandler, GetRoleQuery, GetRoleHandler,
+    SearchRolesQuery, SearchRolesHandler,
+)
+from src.application.auth.handlers import CurrentUserDTO
 from src.constants.messages import MSG_ROLE_DELETED
 from src.api.http.dependencies import (
     get_create_role_handler,

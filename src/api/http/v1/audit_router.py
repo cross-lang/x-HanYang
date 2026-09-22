@@ -4,11 +4,8 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, Request
 
-from src.application.audit.queries.search_login_logs import (
-    SearchLoginLogsQuery,
-    SearchLoginLogsHandler,
-)
-from src.application.auth.dto.auth_dto import CurrentUserDTO
+from src.application.audit.handlers import SearchLoginLogsQuery, SearchLoginLogsHandler
+from src.application.auth.handlers import CurrentUserDTO
 from src.api.http.dependencies import (
     get_search_login_logs_handler,
     get_current_user_dep,

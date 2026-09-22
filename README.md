@@ -4,7 +4,7 @@
 
 ## 项目简介
 
-**汉阳（HanYang）** 是一个基于`领域驱动设计（DDD）`思想，使用 `FastAPI` 实现的生产级 Python Web 应用框架。项目以 DDD 分层架构为核心设计思想，严格遵循领域驱动设计原则，提供完整的用户认证、RBAC 权限管理、审计日志、文件管理等企业级功能模块。
+**汉阳（HanYang）** 是一个基于 `领域驱动设计（DDD）` 思想，使用 `FastAPI` 实现的生产级 Python Web 应用框架。项目以 DDD 分层架构为核心设计思想，严格遵循领域驱动设计原则，提供完整的用户认证、RBAC 权限管理、审计日志、文件管理等企业级功能模块。
 
 **适用场景：**
 
@@ -18,6 +18,8 @@
 - 领域事件驱动：聚合根收集领域事件，UoW 提交后由事件总线统一分发
 - 工作单元（Unit of Work）：CommandHandler 通过 `async with uow` 管理事务边界，确保数据一致性
 - 领域端口（Domain Port）：StorageProvider、PasswordHasher 等抽象定义在领域层，基础设施层实现，严格遵循依赖倒置原则
+- 有状态 JWT 会话：Redis 存储登录态，支持即时登出和单设备登录
+- 结构化日志：JSON 格式（生产）/ 彩色格式（开发），按小时轮转，request_id 全链路追踪
 - RESTful 规范：更新使用 `PUT`、删除使用 `DELETE`，资源路径语义清晰
 - 生产级安全：JWT 认证、速率限制、敏感数据脱敏、生产配置校验
 
@@ -30,7 +32,7 @@
 | Python | >= 3.11 | 推荐 3.11 或 3.12 |
 | uv | >= 0.6 | 包管理器 |
 | MySQL | >= 8.0 | 生产数据库（可选，本地开发可用 SQLite） |
-| Redis | >= 7.0 | 缓存（可选） |
+| Redis | >= 7.0 | 缓存与会话管理（可选） |
 | Docker | >= 24.0 | 容器部署（可选） |
 
 **操作系统适配：**
@@ -77,7 +79,8 @@ cp .env.example .env
 | `REDIS_URL` | Redis 连接 URL | `redis://localhost:6379/0` |
 | `AUTH_SECRET_KEY` | JWT 签名密钥（生产环境必须 >= 32 位随机字符串） | `your-secret-key-here` |
 | `CORS_ORIGINS` | CORS 允许的来源 | `["http://localhost:3000"]` |
-| `SMTP_HOST` | SMTP 邮件服务器 | `smtp.example.com` |
+| `LOGGING_LEVEL` | 日志级别 | `DEBUG` / `INFO` / `WARNING` |
+| `LOGGING_FORMAT` | 控制台日志格式 | `json`（生产）/ `console`（开发） |
 
 > 本地快速体验可使用 SQLite：`DATABASE_URL=sqlite+aiosqlite:///./data/hanyang.db`
 
@@ -135,9 +138,6 @@ uv run ruff check --fix .
 
 # 类型检查
 uv run mypy src
-
-# 依赖漏洞扫描
-uv run pip-audit
 ```
 
 ### 7. 使用方法示例
@@ -179,14 +179,22 @@ x-HanYang/
 │   ├── script.py.mako                # 迁移脚本模板
 │   └── versions/                     # 迁移版本文件
 ├── src/
-│   ├── application/                  # 应用层 — 用例编排，不含业务规则
-│   │   ├── audit/                    #   审计用例（登录日志查询）
-│   │   ├── auth/                     #   认证用例（登录/登出/刷新令牌）
-│   │   ├── file/                     #   文件用例（上传/下载）
-│   │   ├── role/                     #   角色用例（CRUD）
-│   │   ├── shared/                   #   应用层共享（EventBus 抽象、UnitOfWork 抽象、PaginatedResult 分页 DTO）
-│   │   └── user/                     #   用户用例（CRUD + 搜索）
-│   ├── constants/                    # 全局常量（应用元信息、认证、HTTP、分页、消息）
+│   ├── core/                         # 核心公共模块（跨层共享）
+│   │   ├── config.py                 #   全局配置（pydantic-settings）
+│   │   ├── logger.py                 #   日志（JSON/彩色格式、轮转、request_id）
+│   │   ├── security.py               #   密码哈希（bcrypt）
+│   │   ├── tokens.py                 #   JWT 签发/校验
+│   │   ├── session.py                #   有状态会话管理（Redis）
+│   │   ├── exceptions.py             #   框架层异常
+│   │   ├── middleware.py              #   通用 HTTP 中间件
+│   │   ├── exception_handlers.py     #   异常→HTTP 响应映射
+│   │   └── seed.py                   #   种子数据初始化
+│   ├── constants/                    # 全局常量
+│   │   ├── app.py                    #   应用元信息
+│   │   ├── auth.py                   #   认证相关常量
+│   │   ├── http.py                   #   HTTP 常量
+│   │   ├── messages.py               #   业务消息常量
+│   │   └── pagination.py             #   分页默认值
 │   ├── domain/                       # 领域层 — 零外部依赖，纯业务逻辑
 │   │   ├── audit/                    #   审计聚合（AuditLog、LoginLog）
 │   │   ├── auth/                     #   认证聚合（AuthDomainService 接口、领域事件）
@@ -194,28 +202,31 @@ x-HanYang/
 │   │   ├── password_hasher.py        #   密码哈希端口（PasswordHasher 领域接口）
 │   │   ├── shared/                   #   领域共享内核（Entity、ValueObject、AggregateRoot、DomainEvent、Repository 抽象）
 │   │   └── user/                     #   用户聚合（User 聚合根、Role、Permission、Email/Password 值对象）
+│   ├── application/                  # 应用层 — 用例编排，不含业务规则
+│   │   ├── audit/                    #   审计用例（登录日志查询）
+│   │   ├── auth/                     #   认证用例（登录/登出/刷新令牌）
+│   │   ├── file/                     #   文件用例（上传/下载）
+│   │   ├── role/                     #   角色用例（CRUD）
+│   │   ├── shared/                   #   应用层共享（EventBus、UnitOfWork、PaginatedResult）
+│   │   └── user/                     #   用户用例（CRUD + 搜索）
 │   ├── infrastructure/               # 基础设施层 — 技术实现
-│   │   ├── auth/                     #   认证服务实现（JWT + 密码哈希）
-│   │   ├── config/                   #   配置管理（pydantic-settings）
+│   │   ├── auth/                     #   认证服务实现（JWT + 有状态会话）
 │   │   ├── external/                 #   外部服务适配器（缓存、邮件、存储、HTTP 客户端、限流）
 │   │   ├── messaging/                #   事件总线实现（内存事件分发器）
-│   │   └── persistence/              #   持久化（异步数据库、ORM 映射、仓储实现、工作单元、迁移）
-│   ├── api/                   # 接口层 — HTTP / MQ / gRPC 入口
+│   │   └── persistence/              #   持久化（异步数据库、ORM 映射、仓储实现、工作单元）
+│   ├── api/                          # 接口层 — HTTP 入口
 │   │   ├── http/                     #   HTTP 接口
 │   │   │   ├── schemas/              #     Pydantic 请求/响应 Schema
 │   │   │   └── v1/                   #     API v1 路由（health/auth/user/role/file/audit）
 │   │   └── shared/                   #   接口层共享（统一响应格式）
-│   ├── shared/                       # 跨层共享（日志、安全工具、框架异常）
+│   ├── shared/                       # 向后兼容 re-export（请改用 src.core）
 │   ├── utils/                        # 工具函数（IP 提取、敏感数据脱敏）
 │   └── main.py                       # 应用入口（工厂函数 + 生命周期管理）
 ├── tests/                            # 测试目录
-├── scripts/                          # 运维脚本
 ├── .env.example                      # 环境变量模板
-├── .gitignore                        # Git 忽略规则
 ├── alembic.ini                       # Alembic 配置
 ├── docker-compose.yml                # Docker Compose 编排
 ├── Dockerfile                        # Docker 镜像构建
-├── LICENSE                           # 开源协议
 ├── pyproject.toml                    # 项目元信息与依赖管理
 └── uv.lock                           # 依赖锁定文件
 ```
@@ -229,6 +240,12 @@ graph TB
     subgraph "接口层 api"
         HTTP[HTTP 路由 / 中间件 / 异常处理器]
         Schemas[Pydantic Schema 校验]
+    end
+
+    subgraph "核心层 core"
+        Config[全局配置]
+        Logger[结构化日志]
+        Security[密码哈希 / JWT / 会话]
     end
 
     subgraph "应用层 Application"
@@ -249,7 +266,7 @@ graph TB
         ORM[SQLAlchemy ORM]
         Repos[仓储实现]
         JWT[JWT 认证]
-        Cache[Redis 缓存]
+        Cache[Redis 缓存 / 会话]
         Email[SMTP 邮件]
         Storage[文件存储]
     end
@@ -266,6 +283,9 @@ graph TB
     DomainServices --> Repositories
     Repos -.->|实现| Repositories
     JWT -.->|实现| DomainServices
+    Config -.->|配置| Infrastructure
+    Logger -.->|日志| Infrastructure
+    Security -.->|安全| Infrastructure
 ```
 
 ### 用户认证流程
@@ -276,6 +296,7 @@ sequenceDiagram
     participant R as API 路由
     participant H as LoginHandler
     participant A as AuthDomainService
+    participant S as Session (Redis)
     participant U as UnitOfWork
     participant DB as 数据库
 
@@ -287,11 +308,23 @@ sequenceDiagram
     DB-->>U: User
     A->>A: 验证密码
     A->>U: user_repo.save(record_login)
+    A->>S: set_login_status(user_id, token, ttl)
     A-->>H: TokenPair
     U->>DB: COMMIT
     H-->>R: TokenPairDTO
     R-->>C: {access_token, refresh_token}
 ```
+
+### 有状态会话机制
+
+| 操作 | Redis 行为 | 效果 |
+|------|-----------|------|
+| 登录 | `SET login:{user_id} access_token TTL` | 写入登录态，新登录覆盖旧令牌 |
+| 获取当前用户 | `GET login:{user_id}` → 比对 token | token 不匹配则拒绝（被顶替或已登出） |
+| 刷新令牌 | `GET login:{user_id}` → 校验存在 | 用户已登出则拒绝刷新 |
+| 登出 | `DEL login:{user_id}` | 令牌立即全部失效 |
+
+> Redis 未配置时自动降级为无状态 JWT，不阻断业务。
 
 ### 用户创建流程
 
@@ -323,10 +356,10 @@ sequenceDiagram
 | **开发语言** | Python 3.11+ |
 | **Web 框架** | FastAPI 0.115+, Uvicorn, Gunicorn |
 | **数据存储** | MySQL 8.0 (asyncmy), SQLite (aiosqlite), SQLAlchemy 2.0, Alembic |
-| **缓存** | Redis 7 (redis-py async) |
-| **认证** | PyJWT (JWT 令牌), bcrypt (密码哈希) |
+| **缓存与会话** | Redis 7 (redis-py async) |
+| **认证** | PyJWT (JWT 令牌), bcrypt (密码哈希), Redis 有状态会话 |
 | **配置管理** | pydantic-settings, python-dotenv |
-| **日志** | Loguru |
+| **日志** | Loguru（JSON/彩色格式、按小时轮转、request_id 追踪） |
 | **限流** | slowapi |
 | **HTTP 客户端** | httpx (异步, 重试) |
 | **代码质量** | Ruff (格式化 + Lint), mypy (类型检查) |
@@ -371,6 +404,7 @@ sequenceDiagram
 - 所有接口（除健康检查、登录、刷新令牌外）均需 Bearer Token 认证
 - 令牌通过 `POST /api/v1/auth/login` 获取，有效期默认 7 天
 - 支持通过 `POST /api/v1/auth/refresh` 刷新令牌
+- 有状态会话：登出后令牌立即失效，新设备登录自动顶替旧设备
 
 ## 存储配置说明
 
@@ -403,13 +437,34 @@ uv run alembic upgrade head
 uv run alembic downgrade -1
 ```
 
-### 缓存存储
+### 缓存与会话存储
 
 ```env
 REDIS_URL=redis://localhost:6379/0
 ```
 
-Redis 用于令牌管理、权限缓存等场景，未配置时相关功能自动降级。
+Redis 用于有状态会话管理（即时登出、单设备登录）、权限缓存等场景。未配置时相关功能自动降级为无状态 JWT。
+
+### 日志配置
+
+```env
+# 日志级别: DEBUG / INFO / WARNING / ERROR / CRITICAL
+LOGGING_LEVEL=INFO
+
+# 控制台格式: "json" (生产，适合 Loki/ELK) 或 "console" (开发，彩色可读)
+LOGGING_FORMAT=console
+
+# 日志文件路径
+LOGGING_FILE_PATH=logs/app.log
+
+# 日志轮转: "1 hour"、"1 day"、"100 MB" 等
+LOGGING_ROTATION=1 hour
+
+# 日志保留: "7 days"、"30 days" 等
+LOGGING_RETENTION=7 days
+```
+
+日志自动注入 request_id，整个请求链路的日志都携带同一 ID，便于问题追踪。
 
 ### 文件存储
 

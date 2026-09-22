@@ -10,25 +10,10 @@ from fastapi import Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.application.audit.commands.record_login_log import RecordLoginLogHandler
-from src.application.audit.queries.search_login_logs import SearchLoginLogsHandler
-from src.application.auth.commands.login import LoginHandler
-from src.application.auth.commands.refresh_token import RefreshTokenHandler
-from src.application.auth.commands.logout import LogoutHandler
-from src.application.auth.queries.get_current_user import GetCurrentUserHandler
-from src.application.auth.dto.auth_dto import CurrentUserDTO
-from src.application.shared.event_bus import EventBus
-from src.application.shared.unit_of_work import UnitOfWork
-from src.application.user.commands.create_user import CreateUserHandler
-from src.application.user.commands.update_user import UpdateUserHandler
-from src.application.user.commands.delete_user import DeleteUserHandler
-from src.application.user.queries.get_user import GetUserHandler
-from src.application.user.queries.search_users import SearchUsersHandler
-from src.application.role.commands.create_role import CreateRoleHandler
-from src.application.role.commands.update_role import UpdateRoleHandler
-from src.application.role.commands.delete_role import DeleteRoleHandler
-from src.application.role.queries.get_role import GetRoleHandler
-from src.application.role.queries.search_roles import SearchRolesHandler
+from src.application.audit.handlers import RecordLoginLogHandler, SearchLoginLogsHandler
+from src.application.auth.handlers import LoginHandler, RefreshTokenHandler, LogoutHandler, GetCurrentUserHandler, CurrentUserDTO
+from src.application.user.handlers import CreateUserHandler, UpdateUserHandler, DeleteUserHandler, GetUserHandler, SearchUsersHandler
+from src.application.role.handlers import CreateRoleHandler, UpdateRoleHandler, DeleteRoleHandler, GetRoleHandler, SearchRolesHandler
 from src.constants.messages import MSG_INVALID_OR_EXPIRED_TOKEN, MSG_MISSING_TOKEN
 from src.domain.audit.repository import LoginLogRepository
 from src.domain.auth.auth_service import AuthDomainService
